@@ -23,6 +23,7 @@ If you know a Node/Playwright project, the right-hand column is the file you alr
 | `Makefile` | The command menu | `scripts` in `package.json` |
 | `.pre-commit-config.yaml` | Git hooks: lint before a commit, all checks before a push | husky + lint-staged |
 | `.github/workflows/ci.yml` | CI: `make check` on Python 3.12 and 3.13 | `.gitlab-ci.yml`, `Jenkinsfile` |
+| `.github/dependabot.yml` | A monthly pull request when an action or dependency is outdated | Renovate |
 | `.editorconfig` | Same whitespace in every editor | — |
 | `.gitattributes` | Line endings are LF everywhere | — |
 | `.venv/` | The virtual environment, created by uv — never committed | `node_modules/` |
