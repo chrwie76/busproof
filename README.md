@@ -3,7 +3,8 @@
 **Make your system bus-proof.** Tests for asynchronous interfaces — events, messages, timing —
 from a mocked service to real hardware.
 
-> Early days. The ideas this is built on: [docs/IDEAS.md](docs/IDEAS.md).
+> **Status: M0 of 8 — concept.** What it becomes and in which order:
+> [docs/CONCEPT.md](docs/CONCEPT.md). The ideas it is built on: [docs/IDEAS.md](docs/IDEAS.md).
 
 ```python
 from busproof import expect

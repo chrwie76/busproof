@@ -10,3 +10,6 @@ build/
 .env
 .env.*
 *:Zone.Identifier
+
+# Local development memory: never leaves this machine
+.memory/
