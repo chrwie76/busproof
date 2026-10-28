@@ -128,7 +128,7 @@ So the agent layer ships as:
 
 ## 6 · How the code is written — so it stays readable
 
-- **Plain Python 3.12**, `async`/`await`, dataclasses, type hints. No metaclasses, no
+- **Plain Python** — at least 3.12 (Ubuntu 24.04 LTS), developed on 3.13 — `async`/`await`, dataclasses, type hints. No metaclasses, no
   decorators that hide control flow, no dependency injection framework.
 - **Small files** (aim < 200 lines), one idea per module, a docstring that says *why* it exists.
 - **Few dependencies**: `pytest`, `httpx`, `jsonschema`, `pyyaml`; `paho-mqtt` / `aiomqtt` as an
@@ -136,6 +136,14 @@ So the agent layer ships as:
 - **Every module has a test**, and the library's tests run offline with a fake bus.
 - **Tooling**: `uv` for environments, `ruff` for lint and format, `pyright` for types, GitHub
   Actions for CI. Version from Git tags.
+- **Root files a newcomer recognises** — `pyproject.toml`, `uv.lock`, `Makefile`,
+  `.pre-commit-config.yaml`, CI workflow; mapped to their Node/Playwright counterparts in
+  [CONTRIBUTING.md](../CONTRIBUTING.md).
+- **Settings of a test project** live in `busproof.toml`, the counterpart of
+  `playwright.config.ts`: environments (`local`, `ci`) with their broker and API addresses,
+  default timeouts, the stance per environment, reporters. Secrets never go there — they come
+  from the environment, documented in `.env.example`. Found by walking up from the current
+  directory, as pytest finds its config. Arrives with M1.
 
 ## 7 · Repository layout (target)
 
