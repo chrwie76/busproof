@@ -5,6 +5,7 @@ from a mocked service to real hardware.
 
 > **Status: M1 of 8 — the language, in progress.** What it becomes and in which order:
 > [docs/CONCEPT.md](docs/CONCEPT.md). The ideas it is built on: [docs/IDEAS.md](docs/IDEAS.md).
+> How to use it, step by step, as far as it is tried: [docs/PLAYBOOK.md](docs/PLAYBOOK.md).
 
 ```python
 import asyncio

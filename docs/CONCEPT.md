@@ -124,15 +124,19 @@ So the agent layer ships as:
 
 | Playbook step | Gate | Skill (optional) |
 | --- | --- | --- |
-| 1 Understand the system: read the AsyncAPI file, derive test ideas | | `plan-tests` |
-| 2 Plan: state transitions, boundary values, equivalence classes | **G1** | `plan-tests` |
-| 3 Write the test | | `write-test` |
-| 4 Prove it catches: inject a fault, the test must turn red | | `write-test` |
-| 5 Review and accept | **G2** | `review-test` (assists, does not decide) |
-| 6 Run, produce evidence | | — |
-| 7 Judge a red run | **G3** | `triage-run` |
-| 8 Explore under a charter | | `explore-system` |
-| 9 Release | **G4** | — |
+| 1 Agree the contract: one per machine, the state machine, the line | | `draft-contract` |
+| 2 Understand the system: read the contract, derive test ideas | | `plan-tests` |
+| 3 Plan: state transitions, boundary values, equivalence classes | **G1** | `plan-tests` |
+| 4 Write the test | | `write-test` |
+| 5 Prove it catches: inject a fault, the test must turn red | | `write-test` |
+| 6 Review and accept | **G2** | `review-test` (assists, does not decide) |
+| 7 Run, produce evidence | | — |
+| 8 Judge a red run | **G3** | `triage-run` |
+| 9 Explore under a charter | | `explore-system` |
+| 10 Release | **G4** | — |
+
+The playbook itself is [docs/PLAYBOOK.md](PLAYBOOK.md), a living draft: a step is written down
+once it has been gone through for real on the demo line.
 
 ### 4.5 Evidence and where the person sits
 
