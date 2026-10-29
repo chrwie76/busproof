@@ -358,11 +358,15 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–21):
     cannot drift apart. *Where it runs* — broker address, user, password — is in **`.env`**,
     which changes with the environment and stays closed to agents. *How we test* — which
     contract, which line, default waiting time — is in **`busproof.toml`** of the test project.
-    Topics follow ISA-95 as a Unified Namespace does:
-    `{enterprise}/{site}/{area}/{line}/{machine}/{signal}`, in the demo
-    `acme/plant1/packaging/line1/capper/good_count` — `acme` being the classic made-up company
-    of software examples, so no reader mistakes it for a real one. The part that differs per
-    site is an AsyncAPI channel parameter, filled from `busproof.toml`. Topics never go into `.env`: an agent writing a
+    Topics follow ISA-95 as a Unified Namespace does: `{enterprise}/{site}/{area}/{line}/
+    {machine}`, in the demo `acme/plant1/packaging/line1/capper` — `acme` being the classic
+    made-up company of software examples, so no reader mistakes it for a real one. **One message
+    per machine** carries its whole state, `{"state": "Execute", "good_count": 123, …}`, sent
+    again on every change and at a steady pace: each machine is a unit of its own (PackML), the
+    line's state stays what BusProof derives, and a repeated value is fresh evidence for
+    `remains`. A signal is a topic plus a path into the payload, so a plant that sends one
+    message per line works too. The part of a topic that differs per site is an AsyncAPI
+    channel parameter, filled from `busproof.toml`. Topics never go into `.env`: an agent writing a
     test must be able to read them. Until the contract is read (M1 step 5), a machine gets its
     topics from a function the test writes by hand: `topics("capper", "good_count")`.
 

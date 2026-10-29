@@ -1,9 +1,10 @@
 """Machines and lines — the page objects of a plant.
 
 A test project writes one class per machine, in its constructor, and names signals by what
-they mean (`good_count`), never by topic. Which topic that is, `topics` says: a function from
-machine and signal (or command) to topic. A test writes it by hand; later the contract and
-busproof.toml provide it (docs/CONCEPT.md, decision 21). So no topic convention ever sits here.
+they mean (`good_count`), never by topic. Where that signal is, `topics` says: a function from
+machine and signal (or command) to an `Address`. A test writes it by hand; later the contract
+and busproof.toml provide it (docs/CONCEPT.md, decision 21). So no topic convention ever sits
+here.
 
     class Capper(Machine):
         def __init__(self, bus: Bus, topics: Topics):
@@ -15,12 +16,22 @@ the test, where a reader looks for it.
 """
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
 from busproof.bus import Bus
 from busproof.signals import Consensus, Signal
 
-# topics("capper", "good_count") -> "acme/line1/capper/good_count"
-Topics = Callable[[str, str], str]
+
+@dataclass(frozen=True)
+class Address:
+    """Where a signal is: its topic, and where its value sits in the payload."""
+
+    topic: str
+    path: tuple[str, ...] = ()
+
+
+# topics("capper", "good_count") -> Address("acme/…/line1/capper", ("good_count",))
+Topics = Callable[[str, str], Address]
 
 
 class Machine:
@@ -33,10 +44,11 @@ class Machine:
         self.state = self.signal("state")
 
     def signal(self, name: str) -> Signal:
-        return Signal(self.bus, self.topics(self.name, name), name=f"{self.name}.{name}")
+        address = self.topics(self.name, name)
+        return Signal(self.bus, address.topic, name=f"{self.name}.{name}", path=address.path)
 
     async def send(self, command: str, value: object = None) -> None:
-        await self.bus.send(self.topics(self.name, command), value)
+        await self.bus.send(self.topics(self.name, command).topic, value)
 
 
 class Line:

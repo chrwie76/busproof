@@ -3,11 +3,12 @@
 from importlib.metadata import version
 
 from busproof.expect import ExpectationFailed, expect
-from busproof.machines import Line, Machine, Topics
+from busproof.machines import Address, Line, Machine, Topics
 from busproof.signals import Consensus, Mixed, Signal
 
 __version__ = version("busproof")
 __all__ = [
+    "Address",
     "Consensus",
     "ExpectationFailed",
     "Line",
