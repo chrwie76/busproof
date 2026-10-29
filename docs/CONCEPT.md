@@ -124,7 +124,7 @@ So the agent layer ships as:
 
 | Playbook step | Gate | Skill (optional) |
 | --- | --- | --- |
-| 1 Agree the contract: one per machine, the state machine, the line | | `draft-contract` |
+| 1 Agree the contract — or discover it from a recording, if none is written | | `draft-contract` |
 | 2 Understand the system: read the contract, derive test ideas | | `plan-tests` |
 | 3 Plan: state transitions, boundary values, equivalence classes | **G1** | `plan-tests` |
 | 4 Write the test | | `write-test` |
@@ -238,7 +238,7 @@ catch its faults? Only the last is what the tool is for.
 | **M1** | The language | A `line` fixture with hand-written, typed entity classes (autocompletion in VS Code, like page objects); `expect` with 3 matchers; a recorder that buffers every message of a test; fake bus and MQTT adapter; tests offline. |
 | **M2** | The demo plant | Own small PackML simulation on MQTT (UNS topics, mounted AsyncAPI file) + fault switch + HTML page, `make demo` with secrets generated on first start and the security profiles `open` and `password` (default); an example suite catches a product fault a control suite misses. README shows it. **First public release, also on PyPI** (Trusted Publishing, TestPyPI first). |
 | **M3** | Two systems | MES service over REST (OpenAPI); tests that span MES order → line → MQTT result; security profile `mtls`. |
-| **M4** | Knowledge | AsyncAPI/OpenAPI import → contract → test ideas checklist; templates; first knowledge pages. |
+| **M4** | Knowledge | AsyncAPI/OpenAPI import → contract → test ideas checklist; **a contract discovered from a recording of the demo plant**, with its origin, and the loop that sharpens it (decision 24); templates; first knowledge pages. |
 | **M5** | Evidence | The five parts of §4.5: JUnit + JSONL + a report for people with *pass / fail / inconclusive / skipped-with-reason*, mapped to the ISO/IEC/IEEE 29119-3 test documents. |
 | **M6** | Agent layer | The playbook and its skills, tried against the demo plant; a recorded session in the docs. |
 | **M7** | Catch power | A fault catalog for the demo plant and the fraction the shipped suite catches, stated honestly. |
@@ -248,7 +248,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–23):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–24):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -393,6 +393,20 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–23):
     machine all three follow is `packml.yaml`, once. `line.yaml` only composes: which machines,
     in which order, and the values of the address parameters. This refines decisions 13 and
     14, which spoke of one `asyncapi.yaml`.
+24. **Contracts are central, but not an entry ticket.** Many plants run large machines with no
+    written contract: it lives in the PLC program, the HMI tag list, a few heads — and in what
+    the bus carries every day. BusProof meets them there instead of shutting them out. Step 1
+    of the playbook has two ways in: **agree** a contract that exists, or **discover** one —
+    listen in the `observe` stance, draft a contract from what was seen (topics, fields,
+    types, observed ranges, states and the changes between them), and a person who knows the
+    plant agrees it line by line. *Observed is not right*: a draft pins what the plant does,
+    which may be a fault of many years. So every contract carries its **origin** — delivered
+    by its maker, observed, agreed by whom and when — provenance for the test basis as for the
+    tests. Then the **loop**: tests from the contract run against the plant, and each
+    deviation asks *the plant or the contract?* — so the contract is sharpened by use and
+    shows how far it carries. Agents help most here, in legacy plants: drafting from
+    recordings, listing open questions, proposing what a deviation means; a person decides
+    each time. This is what sets BusProof apart, and once it works it is shown as such (M4).
 
 To settle later:
 

@@ -10,7 +10,7 @@ repeating it (docs/CONCEPT.md §4.4).
 
 | # | Step | Gate | Written |
 | --- | --- | --- | --- |
-| 1 | [Agree the contract](#1--agree-the-contract) — what the plant offers, and how it behaves | | ✓ |
+| 1 | [Agree the contract](#1--agree-the-contract) — what the plant offers, and how it behaves; or discover it, if none is written | | ✓ (agree) |
 | 2 | Understand the system — derive test ideas from the contract | | |
 | 3 | Plan — state transitions, boundary values, equivalence classes | **G1** | |
 | 4 | Write the test — machine classes, fixtures, tests | | |
@@ -85,6 +85,29 @@ the layout of the line. And a person who can answer questions about the plant.
 - *A second toolchain for one check* — the official AsyncAPI tools are JavaScript; the same
   schema checks the contract from Python.
 
-**With an agent** (later, as a skill): an agent may draft a contract from what the builders
-delivered and list its open questions. It never invents a topic, field or state the delivered
-documents do not contain (AGENTS.md), and a person agrees the contract before step 2 begins.
+### No contract yet? Discover it
+
+*Not tried yet — the tool comes with M4 (docs/CONCEPT.md, decision 24).*
+
+Many plants run without a written contract. It exists all the same — in the PLC program, the
+HMI tag list, a few heads, and in what the bus carries every day. So it can be found:
+
+1. **Listen.** Connect BusProof in the `observe` stance — it sends nothing — and record long
+   enough to see the plant do its work: a shift, a batch, a start and a stop.
+2. **Draft.** From the recording comes a contract draft: the topics seen, their fields and
+   types, the ranges observed, the states and every change between them that occurred.
+3. **Agree.** A person who knows the plant goes through the draft line by line. A change like
+   `Execute → Idle` without `Stopping` gets a verdict: *meant so*, or *a fault we have had for
+   years*. Only what is agreed becomes the contract.
+4. **Loop.** Tests from the contract run against the plant. Each deviation asks: *the plant or
+   the contract?* The answer sharpens one of them — and shows how far the contract carries.
+
+**Observed is not right.** A draft pins what the plant does, not what it should do. Every
+contract therefore says where it comes from — delivered by its maker, observed, or agreed by
+whom and when — so an auditor can follow the test basis as well as the tests.
+
+**With an agent** (later, as a skill): an agent may draft a contract — from what the builders
+delivered, or from a recording — list its open questions, and propose what a deviation means.
+It never invents a topic, field or state that neither the documents nor the recording contain
+(AGENTS.md), and a person agrees the contract before step 2 begins. In a legacy plant this is
+where an agent helps most: reading thousands of messages is its work, judging them is not.
