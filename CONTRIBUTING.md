@@ -24,13 +24,16 @@ If you know a Node/Playwright project, the right-hand column is the file you alr
 | `.pre-commit-config.yaml` | Git hooks: lint before a commit, all checks before a push | husky + lint-staged |
 | `.github/workflows/ci.yml` | CI: `make check` on Python 3.12 and 3.13 | `.gitlab-ci.yml`, `Jenkinsfile` |
 | `.github/dependabot.yml` | A monthly pull request when an action or dependency is outdated | Renovate |
+| `.env.example` | The variables a setup needs, documented; copy it to `.env`, which is never committed | `.env.example` |
+| `AGENTS.md` | Rules for every AI assistant, above all: secrets are off limits | — |
+| `.claude/settings.json` | Permission rules and the guard hook for Claude Code | — |
+| `tools/guard.py` | Refuses a tool call that touches a secret; runs before every call | a husky hook script |
 | `.editorconfig` | Same whitespace in every editor | — |
 | `.gitattributes` | Line endings are LF everywhere | — |
 | `.venv/` | The virtual environment, created by uv — never committed | `node_modules/` |
 
 Coming in later milestones: `busproof.toml` (settings of a test project, the counterpart of
-`playwright.config.ts`), `.env.example` (addresses and credentials, documented) and
-`docker-compose.yml` (the demo plant).
+`playwright.config.ts`) and `docker-compose.yml` (the demo plant).
 
 ## Rules
 

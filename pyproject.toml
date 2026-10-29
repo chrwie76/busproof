@@ -30,15 +30,19 @@ source = "vcs"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# tools/ holds repository helpers (not part of the package) that have tests of their own.
+pythonpath = ["tools"]
 addopts = ["--strict-markers"]
 
 [tool.ruff]
 line-length = 100
+src = ["src", "tools"]  # where our own imports live, for sorting them apart from third-party ones
 
 [tool.ruff.lint]
 # pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "tools"]
+extraPaths = ["tools"]
 typeCheckingMode = "standard"

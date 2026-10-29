@@ -9,6 +9,8 @@ build/
 *.egg-info/
 .env
 .env.*
+!.env.example
+.claude/settings.local.json
 *:Zone.Identifier
 
 # Local development memory: never leaves this machine
