@@ -23,6 +23,7 @@ If you know a Node/Playwright project, the right-hand column is the file you alr
 | `Makefile` | The command menu | `scripts` in `package.json` |
 | `.pre-commit-config.yaml` | Git hooks: lint before a commit, all checks before a push | husky + lint-staged |
 | `.github/workflows/ci.yml` | CI: `make check` on Python 3.12 and 3.13 | `.gitlab-ci.yml`, `Jenkinsfile` |
+| `.github/pull_request_template.md` | Prefills every pull request: what and why, provenance, evidence, acceptance | GitLab merge request templates |
 | `.github/dependabot.yml` | A monthly pull request when an action or dependency is outdated | Renovate |
 | `.env.example` | The variables a setup needs, documented; copy it to `.env`, which is never committed | `.env.example` |
 | `AGENTS.md` | Rules for every AI assistant, above all: secrets are off limits | — |
