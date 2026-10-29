@@ -16,6 +16,7 @@ dynamic = ["version"]
 [dependency-groups]
 # Tools for working on BusProof itself; never installed for users.
 dev = [
+    "jsonschema>=4.26.0",
     "pre-commit>=4.7.0",
     "pyright>=1.1.414",
     "pytest>=9.2.0",

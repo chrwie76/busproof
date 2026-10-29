@@ -1,15 +1,21 @@
-"""The demo's contracts hold together: the state machine is sound, and every machine contract
-speaks the state numbers the state machine defines.
+"""The demo's contracts hold together: each machine contract is valid AsyncAPI 3.0, the state
+machine is sound, and every machine speaks the state numbers the state machine defines.
 
 These check the files, not the plant — whether the plant keeps to them is what line-tests is for.
 """
 
+import json
+import re
 from pathlib import Path
 
 import pytest
 import yaml
+from jsonschema import Draft7Validator
 
 CONTRACTS = Path(__file__).parents[2] / "demo" / "contracts"
+ASYNCAPI = Draft7Validator(
+    json.loads((Path(__file__).parent / "schemas" / "asyncapi-3.0.0.json").read_text())
+)
 PACKML = yaml.safe_load((CONTRACTS / "packml.yaml").read_text())
 STATES: dict[str, dict] = PACKML["states"]
 MACHINES = sorted((CONTRACTS / "machines").glob("*.asyncapi.yaml"))
@@ -46,6 +52,24 @@ def test_every_state_can_be_reached_from_the_initial_one():
 
 def test_there_is_a_machine_contract():
     assert MACHINES
+
+
+@pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
+def test_a_machine_contract_is_valid_asyncapi_3(path):
+    contract = yaml.safe_load(path.read_text())
+
+    errors = [f"{'/'.join(map(str, e.path))}: {e.message}" for e in ASYNCAPI.iter_errors(contract)]
+    assert not errors, "\n".join(errors)
+
+
+@pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
+def test_every_channel_declares_exactly_the_parameters_in_its_address(path):
+    # The JSON Schema cannot see this; AsyncAPI's own parser would.
+    contract = yaml.safe_load(path.read_text())
+
+    for name, channel in contract["channels"].items():
+        in_address = set(re.findall(r"{(\w+)}", channel["address"]))
+        assert set(channel.get("parameters", {})) == in_address, name
 
 
 @pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
