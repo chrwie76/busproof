@@ -1,0 +1,58 @@
+# The PackML state machine (ISA-TR88.00.02), as the demo machines follow it.
+#
+# The core of the standard: Suspend/Unsuspend and Complete are left out, as PackML allows for a
+# machine that does not need them; they can be added here without changing anything else.
+#
+# Each state has
+#   number    what the machine sends on the wire (the PackTags state number)
+#   done      only in an *acting* state (…ing): where the machine goes on its own when finished
+#   commands  the commands it accepts in this state, and the state each one leads to
+# A command a state does not list is refused there.
+
+name: PackML core
+initial: Stopped
+
+states:
+  Stopped:
+    number: 2
+    commands: {Reset: Resetting, Abort: Aborting}
+  Resetting:
+    number: 15
+    done: Idle
+    commands: {Stop: Stopping, Abort: Aborting}
+  Idle:
+    number: 4
+    commands: {Start: Starting, Stop: Stopping, Abort: Aborting}
+  Starting:
+    number: 3
+    done: Execute
+    commands: {Stop: Stopping, Abort: Aborting}
+  Execute:
+    number: 6
+    commands: {Hold: Holding, Stop: Stopping, Abort: Aborting}
+  Holding:
+    number: 10
+    done: Held
+    commands: {Stop: Stopping, Abort: Aborting}
+  Held:
+    number: 11
+    commands: {Unhold: Unholding, Stop: Stopping, Abort: Aborting}
+  Unholding:
+    number: 12
+    done: Execute
+    commands: {Stop: Stopping, Abort: Aborting}
+  Stopping:
+    number: 7
+    done: Stopped
+    commands: {Abort: Aborting}
+  Aborting:
+    number: 8
+    done: Aborted
+    commands: {}
+  Aborted:
+    number: 9
+    commands: {Clear: Clearing}
+  Clearing:
+    number: 1
+    done: Stopped
+    commands: {Abort: Aborting}

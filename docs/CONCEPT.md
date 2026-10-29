@@ -214,7 +214,7 @@ busproof/                    the tool — the repository root is the library
 │
 └─ demo/                     a customer's world, built to show the tool (layer 3)
    ├─ compose.yaml           broker + plant + web page
-   ├─ contracts/             asyncapi.yaml, line.yaml — the agreement between plant and tests
+   ├─ contracts/             machines/*.asyncapi.yaml, packml.yaml, line.yaml — the agreement
    ├─ plant/                 the system under test; knows nothing of BusProof
    └─ line-tests/            the test project, written as a customer would
       ├─ busproof.toml  conftest.py
@@ -244,7 +244,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–22):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–23):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -271,7 +271,7 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–22):
 
     | File | Answers | Read by | In Git | Secrets |
     | --- | --- | --- | --- | --- |
-    | `demo/contracts/asyncapi.yaml` + `line.yaml` | What *should* the system do? | plant, tests, web page | yes | never |
+    | `demo/contracts/` (AsyncAPI per machine, `packml.yaml`, `line.yaml`; decision 23) | What *should* the system do? | plant, tests, web page | yes | never |
     | `demo/plant/config.json` | In which state does this plant *start*? (levels, counters, speed, active faults, random seed, physics) | plant; tests as a precondition | yes, one file per scenario | never |
     | `.env` | *Where* does it run, and *who* may connect? | tests, Docker Compose | no — `.env.example` is | here, or generated into `demo/secrets/` (decision 16) |
     | `busproof.toml` | *How* do the tests run? (environments, timeouts, stance, reporters) | tests | yes | never — only variable *names* |
@@ -375,12 +375,20 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–22):
     autocompletion); the recorder keeps the raw number as evidence, a failure shows both
     (`EXECUTE (6)`), and a number the enum does not know stays a number — itself a finding.
     The **state machine** — states, the commands that leave each, the acting states a machine
-    leaves on its own — is in `line.yaml`; the library knows no state name, so a plant on
-    Weihenstephan Standards or its maker's own states brings its own `line.yaml`. The demo uses
+    leaves on its own — is in `packml.yaml` (decision 23); the library knows no state name, so a
+    plant on Weihenstephan Standards or its maker's own states brings its own file. The demo uses
     the PackML core of 12 states (Stopped, Resetting, Idle, Starting, Execute, Holding, Held,
     Unholding, Stopping, Aborting, Aborted, Clearing); Suspend and Complete can follow without
     rebuilding. Commands go to one topic per machine, `…/capper/cmd`, as
     `{"command": "Start"}`.
+23. **One contract per machine, a line made of them.** Each machine has its own AsyncAPI file
+    in `demo/contracts/machines/`, as each machine builder delivers its own interface — and as
+    AsyncAPI means it: one document per application. Its topics start with
+    `{enterprise}/{site}/{area}/{line}/` and it names no server, so it does not know where it
+    stands: one contract serves a test at the maker's (FAT) and in the plant (SAT). The state
+    machine all three follow is `packml.yaml`, once. `line.yaml` only composes: which machines,
+    in which order, and the values of the address parameters. This refines decisions 13 and
+    14, which spoke of one `asyncapi.yaml`.
 
 To settle later:
 
