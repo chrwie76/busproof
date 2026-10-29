@@ -237,7 +237,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–17):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–18):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -299,18 +299,44 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–17):
     as the default in M2, `mtls` after it. Under `mtls` the web page still connects with a
     password, because browsers handle client certificates poorly. The `.env.example` names file
     *paths* for CA, certificate and key — never their contents.
+18. **Entities and fixtures follow the page-object pattern** — the same shape as a Playwright
+    project, translated:
 
-To settle next:
+    | Playwright | BusProof | What it is |
+    | --- | --- | --- |
+    | `page` | `bus` | the connection |
+    | `Locator` | `Signal` | a *handle* on a value, not the value; `expect` reads it, and waits |
+    | page object | machine object (`Capper`) | a machine's signals and commands — no `expect` inside |
+    | collector of page objects | `Line` | the machines of a line; the line's state is their consensus |
 
-- **Requirements** — in `line.yaml`, or in a file of their own with a link to where they are
-  managed.
+    A machine class is written **in its constructor**, plain Python with no hidden mechanism,
+    and names signals by their name in `line.yaml`, never by topic:
+
+    ```python
+    class Capper(Machine):
+        """The capping station: closes bottles, counts good and rejected ones."""
+
+        def __init__(self, bus: Bus):
+            super().__init__(bus, name="capper")
+            self.state = self.state_signal("state")
+            self.good_count = self.counter("good_count")
+            self.reject_count = self.counter("reject_count")
+
+        async def start(self) -> None:
+            await self.send("start")
+    ```
+
+    The library provides the building blocks (`Machine`, `Signal`, `Counter`, `expect`); the
+    machine classes belong to the test project, like page objects. Fixtures come in layers:
+    `bus` (the connection from `busproof.toml` and the environment, plus the recorder that keeps
+    every message as evidence) → `line` (the machine objects) → `running_line` (precondition:
+    the line in `Execute`, counter baselines taken). Generating the machine classes from the
+    contract stays in the vision (§10).
 
 To settle later:
 
-- **Fixtures** — what a test receives (`line`, `mes`, a bus, an evidence recorder) and how
-  their scope and setup work.
-- **Entities** — how things, aggregates and their signals are modelled, and how they come from
-  the AsyncAPI file.
+- **Requirements** — in `line.yaml`, or in a file of their own with a link to where they are
+  managed. Needed by M5 (evidence).
 
 ## 10 · Vision — horizon 2
 
