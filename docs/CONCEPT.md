@@ -244,7 +244,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–19):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–20):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -347,6 +347,13 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–19):
     `busproof.toml`. So each part can later leave for a repository of its own unchanged — the
     plant as an image with its contracts, the test project as a template — by deleting the one
     line that takes `busproof` from the workspace instead of from PyPI.
+20. **Matcher names tell the kind of check.** `to_be…` asks where a signal ends up
+    (`to_be("Execute")`, `to_be_in({...})`); a verb asks what it does over time (`rises_by(5)`,
+    `remains(...)`, `remains_between(lo, hi, ...)`, `passes_through(state)`,
+    `happens_before(other)`). `within=` for what must happen at some point, `during=` for what
+    must hold all along, both in seconds as everywhere in Python. *Not* `holds`: in PackML,
+    `Hold` is a command and `Held` a state, and an industrial reader would read
+    `line.state.holds(...)` as "the line goes to Held".
 
 To settle later:
 
