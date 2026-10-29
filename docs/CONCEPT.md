@@ -206,18 +206,25 @@ party that wanted it green is not evidence.
 ## 7 · Repository layout (target)
 
 ```
-busproof/
-├─ src/busproof/          core (layer 1) and knowledge (layer 2)
-│  ├─ expect.py  thing.py  bus.py  plugin.py
-│  ├─ buses/     rest.py  mqtt.py
-│  └─ contract/  asyncapi.py  openapi.py  ideas.py
-├─ demo/                  the demo plant + its AsyncAPI/OpenAPI files (layer 3)
-├─ examples/              example suites against the demo plant
-├─ skills/                SKILL.md files (layer 4)
-├─ playbook/              the one process playbook (layer 4)
-├─ docs/                  IDEAS, CONCEPT, knowledge pages
-└─ tests/                 the library's own tests (offline)
+busproof/                    the tool — the repository root is the library
+├─ src/busproof/             core (layer 1) and knowledge (layer 2)
+├─ tests/                    the tool's own tests: unit/ (one file per module), repo/, later integration/
+├─ skills/  playbook/        layer 4
+├─ docs/                     IDEAS, CONCEPT, knowledge pages
+│
+└─ demo/                     a customer's world, built to show the tool (layer 3)
+   ├─ compose.yaml           broker + plant + web page
+   ├─ contracts/             asyncapi.yaml, line.yaml — the agreement between plant and tests
+   ├─ plant/                 the system under test; knows nothing of BusProof
+   └─ line-tests/            the test project, written as a customer would
+      ├─ busproof.toml  conftest.py
+      ├─ machines/           machine objects (the page objects)
+      └─ tests/              control/  product/  timing/
 ```
+
+Three kinds of tests, three questions: `tests/` — does the tool work? `demo/plant/tests/` — does
+the simulation compute right? `demo/line-tests/` — does the *plant* work, and does the suite
+catch its faults? Only the last is what the tool is for.
 
 ## 8 · Milestones — each one shows something
 
@@ -237,7 +244,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–18):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–19):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -252,7 +259,7 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–18):
 8. **One playbook for the whole process; skills are its agent form** and point to its steps (§4.4).
 9. **Plain pytest, no pytest-bdd** (§6).
 10. **A vision beyond the milestones** is kept in §10, so M1–M2 can stay small.
-11. **An own small simulation** in `demo/`, not an existing twin; contract files are mounted
+11. **An own small simulation** in `demo/plant/`, not an existing twin; contract files are mounted
     into it.
 12. **The web page is plain HTML** on MQTT WebSockets, no Streamlit, no backend.
 13. **Contracts: the wire and the behaviour are two files.** For MQTT, `asyncapi.yaml` says how
@@ -264,8 +271,8 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–18):
 
     | File | Answers | Read by | In Git | Secrets |
     | --- | --- | --- | --- | --- |
-    | `contracts/asyncapi.yaml` + `contracts/line.yaml` | What *should* the system do? | plant, tests, web page | yes | never |
-    | `demo/config.json` | In which state does this plant *start*? (levels, counters, speed, active faults, random seed, physics) | plant; tests as a precondition | yes, one file per scenario | never |
+    | `demo/contracts/asyncapi.yaml` + `line.yaml` | What *should* the system do? | plant, tests, web page | yes | never |
+    | `demo/plant/config.json` | In which state does this plant *start*? (levels, counters, speed, active faults, random seed, physics) | plant; tests as a precondition | yes, one file per scenario | never |
     | `.env` | *Where* does it run, and *who* may connect? | tests, Docker Compose | no — `.env.example` is | here, or generated into `demo/secrets/` (decision 16) |
     | `busproof.toml` | *How* do the tests run? (environments, timeouts, stance, reporters) | tests | yes | never — only variable *names* |
 
@@ -332,6 +339,14 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–18):
     every message as evidence) → `line` (the machine objects) → `running_line` (precondition:
     the line in `Execute`, counter baselines taken). Generating the machine classes from the
     contract stays in the vision (§10).
+19. **Three worlds, one repository, clean seams.** The tool is the repository root; `demo/`
+    holds a customer's world — `contracts/`, `plant/` (the system under test) and `line-tests/`
+    (the test project) — as one uv workspace (§7). Three rules keep them apart, each to be
+    checked by a test: the tool names no plant; the plant knows nothing of BusProof; the test
+    project uses only `from busproof import …` and has its own `pyproject.toml` and
+    `busproof.toml`. So each part can later leave for a repository of its own unchanged — the
+    plant as an image with its contracts, the test project as a template — by deleting the one
+    line that takes `busproof` from the workspace instead of from PyPI.
 
 To settle later:
 

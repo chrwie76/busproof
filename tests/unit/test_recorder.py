@@ -3,18 +3,7 @@
 from busproof.recorder import Recorder
 
 
-class Clock:
-    """A clock the test moves by hand, so no test has to wait for real time to pass."""
-
-    def __init__(self, now: float = 100.0):
-        self.now = now
-
-    def __call__(self) -> float:
-        return self.now
-
-
-def test_messages_are_kept_in_arrival_order_with_the_time_since_the_start():
-    clock = Clock()
+def test_messages_are_kept_in_arrival_order_with_the_time_since_the_start(clock):
     recorder = Recorder(clock)
 
     clock.now += 0.5

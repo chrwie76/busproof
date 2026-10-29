@@ -1,29 +1,17 @@
 """`expect(...).to_equal(...)` waits for the system, and a failure says what it saw."""
 
-import asyncio
 import time
 
 import pytest
 
 from busproof import ExpectationFailed, Signal, expect
-from busproof.fake import FakeBus
 
 STATE = "acme/line1/capper/state"
 
 
 @pytest.fixture
-def bus() -> FakeBus:
-    return FakeBus()
-
-
-@pytest.fixture
-def state(bus: FakeBus) -> Signal:
+def state(bus) -> Signal:
     return Signal(bus, STATE, name="capper.state")
-
-
-def later(seconds: float, bus: FakeBus, topic: str, value: object) -> None:
-    """Let the system publish `value` a little later, while the test is already waiting."""
-    asyncio.get_running_loop().call_later(seconds, bus.deliver, topic, value)
 
 
 async def test_it_passes_at_once_when_the_value_is_already_there(bus, state):
@@ -32,10 +20,12 @@ async def test_it_passes_at_once_when_the_value_is_already_there(bus, state):
     await expect(state).to_equal("Execute", within_s=0)
 
 
-async def test_it_waits_for_a_value_that_arrives_later_and_does_not_wait_longer(bus, state):
+async def test_it_waits_for_a_value_that_arrives_later_and_does_not_wait_longer(
+    bus, state, deliver_later
+):
     bus.deliver(STATE, "Idle")
-    later(0.02, bus, STATE, "Starting")
-    later(0.04, bus, STATE, "Execute")
+    deliver_later(0.02, STATE, "Starting")
+    deliver_later(0.04, STATE, "Execute")
 
     started = time.monotonic()
     await expect(state).to_equal("Execute", within_s=5)
@@ -43,11 +33,11 @@ async def test_it_waits_for_a_value_that_arrives_later_and_does_not_wait_longer(
     assert time.monotonic() - started < 1, "it should return when Execute arrives, not at 5 s"
 
 
-async def test_a_failure_lists_each_change_it_saw_with_repeats_collapsed(bus, state):
+async def test_a_failure_lists_each_change_it_saw_with_repeats_collapsed(bus, state, deliver_later):
     bus.deliver(STATE, "Idle")
-    later(0.01, bus, STATE, "Starting")
-    later(0.02, bus, STATE, "Starting")
-    later(0.03, bus, STATE, "Held")
+    deliver_later(0.01, STATE, "Starting")
+    deliver_later(0.02, STATE, "Starting")
+    deliver_later(0.03, STATE, "Held")
 
     with pytest.raises(ExpectationFailed) as failure:
         await expect(state).to_equal("Execute", within_s=0.1)
@@ -74,8 +64,8 @@ async def test_a_failure_names_the_topic_when_nothing_ever_arrived(state):
     assert f"nothing arrived on {STATE}" in str(failure.value)
 
 
-async def test_a_message_on_another_topic_does_not_count(bus, state):
-    later(0.01, bus, "acme/line1/filler/state", "Execute")
+async def test_a_message_on_another_topic_does_not_count(state, deliver_later):
+    deliver_later(0.01, "acme/line1/filler/state", "Execute")
 
     with pytest.raises(ExpectationFailed):
         await expect(state).to_equal("Execute", within_s=0.05)

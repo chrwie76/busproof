@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-TEMPLATE = Path(__file__).parent.parent / ".env.example"
+TEMPLATE = Path(__file__).parents[2] / ".env.example"
 SECRET_WORDS = ("PASSWORD", "TOKEN", "SECRET", "KEY")
 
 
