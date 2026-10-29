@@ -1,5 +1,7 @@
-"""A signal picks its value out of a payload; a consensus has a value only when all members
-agree — one member never speaks for all."""
+"""A signal picks its value out of a payload and says what a number means; a consensus has a
+value only when all members agree — one member never speaks for all."""
+
+from enum import IntEnum
 
 import pytest
 
@@ -10,9 +12,23 @@ FILLER = "acme/line1/filler/state"
 CAPPER = "acme/line1/capper/state"
 
 
+class State(IntEnum):
+    """Some PackTags state numbers, as a test project would write them."""
+
+    STOPPED = 2
+    STARTING = 3
+    IDLE = 4
+    EXECUTE = 6
+
+
 @pytest.fixture
 def rejects(bus) -> Signal:
     return Signal(bus, MACHINE, "capper.reject_count", path=("reject_count",))
+
+
+@pytest.fixture
+def state(bus) -> Signal:
+    return Signal(bus, MACHINE, "capper.state", path=("state",), enum=State)
 
 
 # --- a value in a payload ------------------------------------------------------------------------
@@ -57,6 +73,44 @@ async def test_a_failure_names_the_field_and_the_topic_when_nothing_arrived(bus,
         await expect(rejects).to_be(0, within=0.05)
 
     assert f"nothing arrived on {MACHINE} (payload field reject_count)" in str(failure.value)
+
+
+# --- what a number means -------------------------------------------------------------------------
+
+
+def test_a_number_on_the_wire_is_read_as_its_name(bus, state):
+    bus.deliver(MACHINE, {"state": 6})
+
+    latest = state.latest()
+    assert latest is not None and latest.value is State.EXECUTE
+
+
+def test_the_recorder_keeps_the_number_that_was_on_the_wire(bus, state):
+    bus.deliver(MACHINE, {"state": 6})
+
+    assert bus.recorder.messages()[0].value == {"state": 6}
+
+
+async def test_a_failure_shows_the_name_and_the_number(bus, state, deliver_later):
+    bus.deliver(MACHINE, {"state": 4})
+    deliver_later(0.01, MACHINE, {"state": 3})
+
+    with pytest.raises(ExpectationFailed) as failure:
+        await expect(state).to_be(State.EXECUTE, within=0.05)
+
+    assert str(failure.value) == (
+        "expected capper.state to be EXECUTE (6) within 0.05s"
+        " — seen: IDLE (4) → STARTING (3) (1 message)"
+    )
+
+
+async def test_a_number_the_enum_does_not_know_stays_a_number_and_shows(bus, state):
+    bus.deliver(MACHINE, {"state": 99})
+
+    with pytest.raises(ExpectationFailed) as failure:
+        await expect(state).to_be(State.EXECUTE, within=0.05)
+
+    assert "seen: 99 (no new message" in str(failure.value)
 
 
 # --- consensus -----------------------------------------------------------------------------------

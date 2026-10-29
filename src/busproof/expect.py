@@ -21,7 +21,7 @@ import asyncio
 from collections.abc import Callable
 from typing import NoReturn, TypeGuard
 
-from busproof.message import Message
+from busproof.message import Message, show
 from busproof.signals import Consensus, Signal
 
 # Seconds to wait when a test does not say. busproof.toml will be able to change it.
@@ -48,7 +48,7 @@ class Expectation:
         self._open_window()
         if await self._wait_until(lambda: self._latest_is(expected), within):
             return
-        self._fail(f"to be {expected!r} within {within:g}s", self._seen(within))
+        self._fail(f"to be {show(expected)} within {within:g}s", self._seen(within))
 
     async def rises_by(self, amount: float, *, within: float = DEFAULT_WITHIN) -> None:
         """Pass as soon as the signal has risen by at least `amount` since the window opened.
@@ -63,7 +63,7 @@ class Expectation:
         values = self._values()
         not_numbers = [value for value in values if not is_number(value)]
         if not_numbers:
-            self._fail(what, f"{not_numbers[0]!r} is not a number")
+            self._fail(what, f"{show(not_numbers[0])} is not a number")
         rose = f"it rose by {self._rise():g}; " if values else ""
         self._fail(what, rose + self._seen(within))
 
@@ -76,7 +76,7 @@ class Expectation:
         self._open_window()
         changed = await self._wait_until(self._changed, during)
         values = self._values()
-        value = f" {values[0]!r}" if values else ""
+        value = f" {show(values[0])}" if values else ""
         what = f"to remain{value} for {during:g}s"
         if changed:
             self._fail(what, "it changed; " + self._seen(during))
@@ -154,7 +154,7 @@ def describe(before: Message | None, seen: list[Message], window: float, topic: 
         return f"nothing arrived on {topic}"
     values = ([before.value] if before else []) + [message.value for message in seen]
     changes = [value for i, value in enumerate(values) if i == 0 or value != values[i - 1]]
-    chain = " → ".join(repr(value) for value in changes)
+    chain = " → ".join(show(value) for value in changes)
     if not seen:
         return f"seen: {chain} (no new message in {window:g}s)"
     count = f"{len(seen)} message" + ("" if len(seen) == 1 else "s")

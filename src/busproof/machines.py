@@ -17,6 +17,7 @@ the test, where a reader looks for it.
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from enum import Enum
 
 from busproof.bus import Bus
 from busproof.signals import Consensus, Signal
@@ -35,17 +36,19 @@ Topics = Callable[[str, str], Address]
 
 
 class Machine:
-    def __init__(self, bus: Bus, topics: Topics, name: str):
+    def __init__(self, bus: Bus, topics: Topics, name: str, states: type[Enum] | None = None):
         self.bus = bus
         self.topics = topics
         self.name = name
-        # Every PackML machine has a state; a subclass may replace it if its signal is named
-        # differently.
-        self.state = self.signal("state")
+        # Every PackML machine has a state; `states` says what its numbers mean. A subclass may
+        # replace it if its signal is named differently.
+        self.state = self.signal("state", states)
 
-    def signal(self, name: str) -> Signal:
+    def signal(self, name: str, enum: type[Enum] | None = None) -> Signal:
         address = self.topics(self.name, name)
-        return Signal(self.bus, address.topic, name=f"{self.name}.{name}", path=address.path)
+        return Signal(
+            self.bus, address.topic, name=f"{self.name}.{name}", path=address.path, enum=enum
+        )
 
     async def send(self, command: str, value: object = None) -> None:
         await self.bus.send(self.topics(self.name, command).topic, value)

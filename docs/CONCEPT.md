@@ -244,7 +244,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–21):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–22):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -369,6 +369,18 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–21):
     channel parameter, filled from `busproof.toml`. Topics never go into `.env`: an agent writing a
     test must be able to read them. Until the contract is read (M1 step 5), a machine gets its
     topics from a function the test writes by hand: `topics("capper", "good_count")`.
+22. **States are numbers on the wire and names in a test.** The demo plant sends PackTags
+    numbers (`"state": 6`), as real controllers do and as OPC UA and gRPC do anyway. A test
+    reads them through an `IntEnum` the test project writes (`State.EXECUTE`, with
+    autocompletion); the recorder keeps the raw number as evidence, a failure shows both
+    (`EXECUTE (6)`), and a number the enum does not know stays a number — itself a finding.
+    The **state machine** — states, the commands that leave each, the acting states a machine
+    leaves on its own — is in `line.yaml`; the library knows no state name, so a plant on
+    Weihenstephan Standards or its maker's own states brings its own `line.yaml`. The demo uses
+    the PackML core of 12 states (Stopped, Resetting, Idle, Starting, Execute, Holding, Held,
+    Unholding, Stopping, Aborting, Aborted, Clearing); Suspend and Complete can follow without
+    rebuilding. Commands go to one topic per machine, `…/capper/cmd`, as
+    `{"command": "Start"}`.
 
 To settle later:
 

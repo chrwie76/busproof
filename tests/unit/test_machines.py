@@ -4,6 +4,8 @@ all. The plant here sends one message per machine, as the demo plant does:
     acme/plant1/packaging/line1/capper -> {"state": "Execute", "good_count": 123}
 """
 
+from enum import IntEnum
+
 from busproof import Address, Line, Machine, expect
 from busproof.bus import Bus
 from busproof.machines import Topics
@@ -36,6 +38,21 @@ def test_a_signal_takes_its_address_from_topics_and_its_name_from_the_machine(bu
 
 def test_every_machine_has_a_state_as_in_packml(bus):
     assert Capper(bus, topics).state.path == ("state",)
+
+
+async def test_a_line_of_machines_that_send_numbers_is_read_by_name(bus):
+    class State(IntEnum):
+        IDLE = 4
+        EXECUTE = 6
+
+    filler, capper = (Machine(bus, topics, name, states=State) for name in ("filler", "capper"))
+    line = Line(bus, [filler, capper])
+    bus.deliver(f"{LINE}/filler", {"state": 6})
+    bus.deliver(CAPPER, {"state": 4})
+
+    latest = line.state.latest()
+    assert latest is not None
+    assert repr(latest.value) == "mixed(filler.state=EXECUTE (6), capper.state=IDLE (4))"
 
 
 async def test_a_command_is_sent_to_the_topic_topics_gives_for_it(bus):

@@ -9,10 +9,12 @@ such as the state of a line made of machines.
 """
 
 from collections.abc import Sequence
+from contextlib import suppress
 from dataclasses import dataclass, replace
+from enum import Enum
 
 from busproof.bus import Bus
-from busproof.message import Message
+from busproof.message import Message, show
 
 
 @dataclass(frozen=True)
@@ -24,6 +26,9 @@ class Signal:
     # Where the value sits in the payload: ("good_count",) in {"state": …, "good_count": 123}.
     # Empty when the whole payload is the value.
     path: tuple[str, ...] = ()
+    # What the value means: PackTags send `6`, a test reads `State.EXECUTE`. A value the enum
+    # does not know stays as it came — itself a finding. The recorder always keeps the raw value.
+    enum: type[Enum] | None = None
 
     def pick(self, message: Message) -> Message | None:
         """The message as this signal sees it — its value picked out of the payload — or None
@@ -35,6 +40,9 @@ class Signal:
             if not isinstance(value, dict) or key not in value:
                 return None
             value = value[key]
+        if self.enum is not None:
+            with suppress(ValueError):  # unknown values stay as they came
+                value = self.enum(value)
         return replace(message, value=value)
 
     def latest(self) -> Message | None:
@@ -65,7 +73,7 @@ class Mixed:
     values: tuple[tuple[str, object], ...]
 
     def __repr__(self) -> str:
-        return "mixed(" + ", ".join(f"{name}={value!r}" for name, value in self.values) + ")"
+        return "mixed(" + ", ".join(f"{name}={show(value)}" for name, value in self.values) + ")"
 
 
 class Consensus:
