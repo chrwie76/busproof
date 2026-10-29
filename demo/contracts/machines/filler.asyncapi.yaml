@@ -1,0 +1,86 @@
+asyncapi: 3.0.0
+
+info:
+  title: Filler
+  version: 1.0.0
+  description: |
+    The filling station of a bottling line: fills each bottle from its tank and counts the
+    bottles filled. It follows the PackML state machine in ../packml.yaml.
+
+    Where it stands is not part of this contract: the four address parameters are filled by
+    the line it is built into, so the same contract serves a test at the maker's (FAT) and in
+    the plant (SAT). No `servers` either — which broker, is a matter of the environment.
+
+channels:
+  status:
+    address: "{enterprise}/{site}/{area}/{line}/filler"
+    description: The machine's whole state, sent on every change and at least once a second.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise, e.g. acme"}
+      site: {description: "ISA-95 site, e.g. plant1"}
+      area: {description: "ISA-95 area, e.g. packaging"}
+      line: {description: "ISA-95 line, e.g. line1"}
+    messages:
+      status:
+        $ref: "#/components/messages/status"
+  command:
+    address: "{enterprise}/{site}/{area}/{line}/filler/cmd"
+    description: A PackML command for the machine. One it does not accept in its state is ignored.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      command:
+        $ref: "#/components/messages/command"
+
+operations:
+  reportStatus:
+    action: send
+    channel: {$ref: "#/channels/status"}
+    summary: The filler reports its state, its counter and its levels.
+  takeCommand:
+    action: receive
+    channel: {$ref: "#/channels/command"}
+    summary: The filler takes a command.
+
+components:
+  messages:
+    status:
+      payload:
+        type: object
+        required: [state, filled_count, fill_level, tank_level]
+        properties:
+          state:
+            type: integer
+            description: PackTags state number (../packml.yaml), e.g. 6 for Execute.
+            enum: [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 15]
+          filled_count:
+            type: integer
+            minimum: 0
+            description: Bottles filled since the last reset.
+          fill_level:
+            type: number
+            minimum: 0
+            maximum: 100
+            description: How full the last bottle was filled, in percent of its nominal volume.
+          tank_level:
+            type: number
+            minimum: 0
+            maximum: 100
+            description: How full the supply tank is, in percent.
+      examples:
+        - name: running
+          payload: {state: 6, filled_count: 1240, fill_level: 98.5, tank_level: 72.0}
+    command:
+      payload:
+        type: object
+        required: [command]
+        properties:
+          command:
+            type: string
+            enum: [Reset, Start, Stop, Hold, Unhold, Abort, Clear]
+      examples:
+        - name: start
+          payload: {command: Start}

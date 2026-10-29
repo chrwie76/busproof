@@ -63,6 +63,18 @@ def test_a_machine_contract_is_valid_asyncapi_3(path):
 
 
 @pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
+def test_every_example_fits_its_own_payload(path):
+    # An example that breaks its own contract would mislead every reader, person or agent.
+    contract = yaml.safe_load(path.read_text())
+
+    for name, message in contract["components"]["messages"].items():
+        payload = Draft7Validator(message["payload"])
+        for example in message.get("examples", []):
+            errors = [error.message for error in payload.iter_errors(example["payload"])]
+            assert not errors, f"{name}/{example['name']}: {errors}"
+
+
+@pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
 def test_every_channel_declares_exactly_the_parameters_in_its_address(path):
     # The JSON Schema cannot see this; AsyncAPI's own parser would.
     contract = yaml.safe_load(path.read_text())
