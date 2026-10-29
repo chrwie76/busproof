@@ -1,0 +1,27 @@
+# Git hooks — like husky + lint-staged. Installed by `make install`.
+# Lint blocks a commit, the tests block a push. The tools come from uv.lock, not from here.
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks  # a secret in the staged changes blocks the commit
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+      - id: tests
+        name: tests
+        entry: make check
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

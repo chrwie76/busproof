@@ -1,0 +1,48 @@
+# The one file a Python project is described by — like package.json for Node.
+# Dependencies, tool settings and metadata live here; exact versions live in uv.lock.
+
+[project]
+name = "busproof"
+description = "A test language for asynchronous industrial interfaces: MQTT, REST, OPC UA."
+readme = "README.md"
+license = "Apache-2.0"
+authors = [{ name = "Christoph Wielgus" }]
+requires-python = ">=3.12"
+dependencies = []
+dynamic = ["version"]
+
+[dependency-groups]
+# Tools for working on BusProof itself; never installed for users.
+dev = [
+    "pre-commit>=4.7.0",
+    "pyright>=1.1.414",
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+# The version comes from the Git tag (v0.1.0); commits after it get a .devN suffix.
+source = "vcs"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# tools/ holds repository helpers (not part of the package) that have tests of their own.
+pythonpath = ["tools"]
+addopts = ["--strict-markers"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tools"]  # where our own imports live, for sorting them apart from third-party ones
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pyright]
+include = ["src", "tests", "tools"]
+extraPaths = ["tools"]
+typeCheckingMode = "standard"

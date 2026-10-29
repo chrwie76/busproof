@@ -3,6 +3,12 @@
 BusProof: a Python test language for asynchronous interfaces (REST, MQTT, OPC UA), with a demo
 plant to show it. Principles: [docs/IDEAS.md](docs/IDEAS.md).
 
+Rules for every agent, above all about secrets: @AGENTS.md
+
+## Commands
+
+`make check` runs lint, types and tests (as CI does); `make` lists the rest.
+
 ## Rules
 
 - **Written from scratch.** Do not copy code or text from other local repositories; ideas are

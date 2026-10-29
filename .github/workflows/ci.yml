@@ -1,0 +1,24 @@
+# Runs on every push and pull request: the same `make check` as on your machine.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04  # pinned: a new image is a deliberate change, not a surprise
+    strategy:
+      matrix:
+        # The oldest Python we support and the one we develop on (.python-version).
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # full history, so the version can be read from Git tags
+      - uses: astral-sh/setup-uv@v10.3.0  # this action publishes exact tags only, no moving v10
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
+      - run: make check
