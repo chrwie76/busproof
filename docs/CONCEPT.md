@@ -225,8 +225,8 @@ busproof/
 | --- | --- | --- |
 | **M0** | Skeleton | `uv sync`, lint, pyright and an empty test suite run green in CI. |
 | **M1** | The language | A `line` fixture with hand-written, typed entity classes (autocompletion in VS Code, like page objects); `expect` with 3 matchers; a recorder that buffers every message of a test; fake bus and MQTT adapter; tests offline. |
-| **M2** | The demo plant | Own small PackML simulation on MQTT (UNS topics, mounted AsyncAPI file) + fault switch + HTML page, `docker compose up`; an example suite catches a product fault a control suite misses. README shows it. **First public release, also on PyPI** (Trusted Publishing, TestPyPI first). |
-| **M3** | Two systems | MES service over REST (OpenAPI); tests that span MES order → line → MQTT result. |
+| **M2** | The demo plant | Own small PackML simulation on MQTT (UNS topics, mounted AsyncAPI file) + fault switch + HTML page, `make demo` with secrets generated on first start and the security profiles `open` and `password` (default); an example suite catches a product fault a control suite misses. README shows it. **First public release, also on PyPI** (Trusted Publishing, TestPyPI first). |
+| **M3** | Two systems | MES service over REST (OpenAPI); tests that span MES order → line → MQTT result; security profile `mtls`. |
 | **M4** | Knowledge | AsyncAPI/OpenAPI import → contract → test ideas checklist; templates; first knowledge pages. |
 | **M5** | Evidence | The five parts of §4.5: JUnit + JSONL + a report for people with *pass / fail / inconclusive / skipped-with-reason*, mapped to the ISO/IEC/IEEE 29119-3 test documents. |
 | **M6** | Agent layer | The playbook and its skills, tried against the demo plant; a recorded session in the docs. |
@@ -237,7 +237,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28:
+Made 2026-10-28 (1–12) and 2026-10-29 (13–17):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -266,7 +266,7 @@ Made 2026-10-28:
     | --- | --- | --- | --- | --- |
     | `contracts/asyncapi.yaml` + `contracts/line.yaml` | What *should* the system do? | plant, tests, web page | yes | never |
     | `demo/config.json` | In which state does this plant *start*? (levels, counters, speed, active faults, random seed, physics) | plant; tests as a precondition | yes, one file per scenario | never |
-    | `.env` | *Where* does it run, and *who* may connect? | tests, Docker Compose | no — `.env.example` is | only here |
+    | `.env` | *Where* does it run, and *who* may connect? | tests, Docker Compose | no — `.env.example` is | here, or generated into `demo/secrets/` (decision 16) |
     | `busproof.toml` | *How* do the tests run? (environments, timeouts, stance, reporters) | tests | yes | never — only variable *names* |
 
     The behaviour file holds what a test can check: topology and the flow of units (stations,
@@ -281,6 +281,24 @@ Made 2026-10-28:
     `secrets/` folder and key files; a secret scan runs before each commit; and an agent that
     sees such a file open in the editor stops and asks for it to be closed. The rules live in
     `AGENTS.md`, which every assistant reads.
+16. **The demo creates its own secrets on first start.** `make demo` finds no credentials and
+    has a one-off container generate them: a random password, a small certificate authority,
+    and certificates for the broker and its clients. They land in `demo/secrets/`, which Git
+    ignores and the guard closes to agents. Nothing secret is ever in the repository, nobody
+    has to create a file by hand, and every installation has keys of its own.
+17. **Security is a switch with three profiles — the same options the library offers a real
+    system:**
+
+    | Profile | Meaning | For |
+    | --- | --- | --- |
+    | `open` | no login, no encryption (port 1883) | a quick try only; console and web page say *insecure* plainly |
+    | `password` | user and password, always over TLS (port 8883) | the usual case — a password without encryption protects nothing |
+    | `mtls` | client certificates (X.509) on both sides | what industrial customers expect, in the spirit of IEC 62443 |
+
+    Chosen with `make demo SECURITY=…`. Order: `open` first with the switch built in, `password`
+    as the default in M2, `mtls` after it. Under `mtls` the web page still connects with a
+    password, because browsers handle client certificates poorly. The `.env.example` names file
+    *paths* for CA, certificate and key — never their contents.
 
 To settle next:
 
