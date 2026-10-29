@@ -1,6 +1,6 @@
 # Concept — what BusProof becomes, and in which order
 
-> Draft v1, 2026-10-28. Written to be argued with. [IDEAS.md](IDEAS.md) holds the *why*; this
+> Draft v4, 2026-10-29. Written to be argued with. [IDEAS.md](IDEAS.md) holds the *why*; this
 > document holds the *what* and the *order*. When a decision here is made, it moves out of §9.
 
 ## 1 · In one sentence
@@ -8,7 +8,7 @@
 **BusProof is a Python test language for asynchronous industrial interfaces (IIoT) — with the
 knowledge, demos and agent skills to use it — so a team can point it at an MQTT-, REST- or
 OPC UA-connected system described by AsyncAPI or OpenAPI and end up with a pytest suite that
-catches real faults.**
+catches real faults — and evidence an auditor can follow.**
 
 ## 2 · Who it is for, and what they see first
 
@@ -40,7 +40,7 @@ use it (e.g. via `jsonschema`), we do not rebuild it.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ 4  Agent layer   skills + playbooks (Markdown), later MCP    │  optional
+│ 4  Agent layer   playbook + skills (Markdown), later MCP     │  optional
 ├──────────────────────────────────────────────────────────────┤
 │ 3  Demos         demo plant (REST + MQTT), example suites    │  in the repo
 ├──────────────────────────────────────────────────────────────┤
@@ -80,7 +80,10 @@ Target size for the first release: **under 1 500 lines of library code.**
 
 ### 4.3 Demos — the fastest proof
 
-- A **demo plant**: a small simulated **packaging line** (filler → capper → inspector).
+- A **demo plant**: a small simulation of its own (a few hundred lines, written for this repo),
+  a simulated **packaging line** (filler → capper → inspector). It is given its contract files
+  as a mounted volume, so plant, tests and panel read the same description (details: §9,
+  contracts round).
   - Each machine follows the **PackML** state model (ISA-TR88: `Idle`, `Starting`, `Execute`,
     `Held`, `Aborted`, …) — an industry standard that also exercises acting states.
   - It publishes over **MQTT** in a **Unified Namespace** (ISA-95 hierarchy, e.g.
@@ -88,6 +91,9 @@ Target size for the first release: **under 1 500 lines of library code.**
   - A small **MES** service takes production orders over **REST** (OpenAPI) and reads the line
     over MQTT — so the demo has two systems, and the interplay is what is tested.
   - Later: **Sparkplug B** payloads and an **OPC UA** server for the same line.
+- A **web page** to watch and click: a single HTML file that connects to Mosquitto over MQTT
+  WebSockets, shows states and counters live, and has buttons for the fault switches. No
+  backend of its own.
 - A **fault switch** in the plant (`stuck sensor`, `slow capper`, `silent rejects`) so a demo
   can show a suite catching a fault — and a control-only suite missing one.
 - One command starts it: **`docker compose up`** (Mosquitto + plant + MES + panel). The project
@@ -95,7 +101,7 @@ Target size for the first release: **under 1 500 lines of library code.**
 - Supported platform: **Ubuntu** (also GitHub Actions). Docker Desktop on Windows/macOS should
   work but is not tested.
 
-### 4.4 Agent layer — skills and playbooks
+### 4.4 Agent layer — the playbook and its skills
 
 What a good harness for agents needs, from looking at others:
 
@@ -109,12 +115,57 @@ What a good harness for agents needs, from looking at others:
 
 So the agent layer ships as:
 
-- **Skills** (`SKILL.md`, the open format several assistants read): *write a test from a
-  requirement*, *diagnose a red run*, *explore a system under a charter*. Each under ~1 000 words,
-  with details in referenced files.
-- **Playbooks**: step-by-step procedures for a human *or* an agent — "onboard a new system from
-  its AsyncAPI file", "triage a failing suite after a spec change".
+- **One playbook** describing the whole process for a person — each step says what to do by
+  hand and which command helps. BusProof is fully usable from the playbook alone, with no agent.
+- **Skills** (`SKILL.md`, the open format several assistants read) as the agent form of a
+  playbook step. A skill *points to* its step instead of repeating it, so there is one
+  description that cannot drift. Each skill stays under ~1 000 words.
 - **Later, if it earns its upkeep:** an MCP server exposing the same commands.
+
+| Playbook step | Gate | Skill (optional) |
+| --- | --- | --- |
+| 1 Understand the system: read the AsyncAPI file, derive test ideas | | `plan-tests` |
+| 2 Plan: state transitions, boundary values, equivalence classes | **G1** | `plan-tests` |
+| 3 Write the test | | `write-test` |
+| 4 Prove it catches: inject a fault, the test must turn red | | `write-test` |
+| 5 Review and accept | **G2** | `review-test` (assists, does not decide) |
+| 6 Run, produce evidence | | — |
+| 7 Judge a red run | **G3** | `triage-run` |
+| 8 Explore under a charter | | `explore-system` |
+| 9 Release | **G4** | — |
+
+### 4.5 Evidence and where the person sits
+
+The product of BusProof is **evidence**, not tests. Tests are how evidence is produced; in a
+world where agents write test code cheaply, what stays scarce is a result someone can trust and
+an auditor can follow. Hence the split: **agents write, the deterministic core proves, people
+sign.**
+
+**The evidence of a run has five parts**, each answering an auditor's question:
+
+| Part | Question | Content |
+| --- | --- | --- |
+| **Run** | What ran, when, where, against what? | time, environment, stance, Git commit of the tests, hash of the AsyncAPI file, BusProof version |
+| **Verdict** | What came out, and why? | per test: requirement ids, verdict (pass / fail / inconclusive / skipped with reason), what each expectation saw |
+| **Observation** | What is the verdict based on? | the raw bus messages, with time and source |
+| **Provenance** | Who wrote the test, who accepted it? | person or agent (model, version, playbook step), accepted by whom and when (pull request review) |
+| **Catch power** | Does the test check anything? | fault X injected, test turned red, with a date |
+
+A manifest with checksums covers all five. Output: JSONL for machines, JUnit for CI, a report
+for people that shows each test as readable Given/When/Then steps.
+
+**The person sits at four gates — the same with or without an agent.** An agent only replaces
+the work *between* the gates, never a gate.
+
+| Gate | Decision | Without an agent | With an agent |
+| --- | --- | --- | --- |
+| **G1 Plan** | What is tested? | the person plans | the agent proposes, the person approves |
+| **G2 Acceptance** | Does the test join the regression suite? | pull request review | an agent's test stays *proposed* until the pull request is approved |
+| **G3 Red run** | Bug, changed specification, or flaky? | the person decides | the agent proposes a diagnosis; it **never changes an expectation** |
+| **G4 Release** | Ship or not? | the person signs | the agent summarises, the person signs |
+
+There is deliberately no "healer" that repairs a red test to green: a test repaired by the
+party that wanted it green is not evidence.
 
 ## 5 · What is deliberately *not* in it (overkill for now)
 
@@ -128,8 +179,15 @@ So the agent layer ships as:
 
 ## 6 · How the code is written — so it stays readable
 
-- **Plain Python** — at least 3.12 (Ubuntu 24.04 LTS), developed on 3.13 — `async`/`await`, dataclasses, type hints. No metaclasses, no
-  decorators that hide control flow, no dependency injection framework.
+- **Plain Python** — at least 3.12 (Ubuntu 24.04 LTS), developed on 3.13 — `async`/`await`,
+  dataclasses, type hints. No metaclasses, no decorators that hide control flow, no dependency
+  injection framework.
+- **Plain pytest, no pytest-bdd.** BDD adds a second layer (feature files *and* step
+  definitions) to write, review and maintain, and pytest-bdd has no async steps (open issues
+  #223, #609, #629, #783 as of 2026-10). What BDD gives is kept another way: the requirement is
+  a marker on the test (`@pytest.mark.requirement("REQ-012")`), the test reads as
+  Given/When/Then, and the report renders it as steps. Acceptance criteria may be written in
+  Gherkin as *input* to planning; they are not executed.
 - **Small files** (aim < 200 lines), one idea per module, a docstring that says *why* it exists.
 - **Few dependencies**: `pytest`, `httpx`, `jsonschema`, `pyyaml`; `paho-mqtt` / `aiomqtt` as an
   optional extra. Each new one needs a sentence in this document.
@@ -156,7 +214,7 @@ busproof/
 ├─ demo/                  the demo plant + its AsyncAPI/OpenAPI files (layer 3)
 ├─ examples/              example suites against the demo plant
 ├─ skills/                SKILL.md files (layer 4)
-├─ playbooks/             step-by-step procedures (layer 4)
+├─ playbook/              the one process playbook (layer 4)
 ├─ docs/                  IDEAS, CONCEPT, knowledge pages
 └─ tests/                 the library's own tests (offline)
 ```
@@ -166,12 +224,12 @@ busproof/
 | # | Milestone | Done when |
 | --- | --- | --- |
 | **M0** | Skeleton | `uv sync`, lint, pyright and an empty test suite run green in CI. |
-| **M1** | The language | `Thing`, `expect` with 3 matchers, fake bus, MQTT adapter; tests offline. |
-| **M2** | The demo plant | PackML line on MQTT (UNS topics, AsyncAPI file) + fault switch, `docker compose up`; an example suite catches a product fault a control suite misses. README shows it. **First public release.** |
+| **M1** | The language | A `line` fixture with hand-written, typed entity classes (autocompletion in VS Code, like page objects); `expect` with 3 matchers; a recorder that buffers every message of a test; fake bus and MQTT adapter; tests offline. |
+| **M2** | The demo plant | Own small PackML simulation on MQTT (UNS topics, mounted AsyncAPI file) + fault switch + HTML page, `docker compose up`; an example suite catches a product fault a control suite misses. README shows it. **First public release, also on PyPI** (Trusted Publishing, TestPyPI first). |
 | **M3** | Two systems | MES service over REST (OpenAPI); tests that span MES order → line → MQTT result. |
 | **M4** | Knowledge | AsyncAPI/OpenAPI import → contract → test ideas checklist; templates; first knowledge pages. |
-| **M5** | Agent layer | Three skills, two playbooks, tried against the demo plant; a recorded session in the docs. |
-| **M6** | Evidence | JUnit + JSONL + an HTML report with *pass / fail / inconclusive / skipped-with-reason*. |
+| **M5** | Evidence | The five parts of §4.5: JUnit + JSONL + a report for people with *pass / fail / inconclusive / skipped-with-reason*, mapped to the ISO/IEC/IEEE 29119-3 test documents. |
+| **M6** | Agent layer | The playbook and its skills, tried against the demo plant; a recorded session in the docs. |
 | **M7** | Catch power | A fault catalog for the demo plant and the fraction the shipped suite catches, stated honestly. |
 
 M0–M2 are the minimum for the CV link to be worth clicking. After that, each milestone is a
@@ -190,3 +248,81 @@ Made 2026-10-28:
 6. **Work in the open.** The repository stays public; the history is part of what it shows.
    `main` only receives finished milestones, work happens on branches, and the README states
    the current milestone. The link goes into the CV from M2 on.
+7. **Evidence is the product** — five parts, four gates, the same with or without an agent (§4.5).
+8. **One playbook for the whole process; skills are its agent form** and point to its steps (§4.4).
+9. **Plain pytest, no pytest-bdd** (§6).
+10. **A vision beyond the milestones** is kept in §10, so M1–M2 can stay small.
+11. **An own small simulation** in `demo/`, not an existing twin; contract files are mounted
+    into it.
+12. **The web page is plain HTML** on MQTT WebSockets, no Streamlit, no backend.
+13. **Contracts: the wire and the behaviour are two files.** For MQTT, `asyncapi.yaml` says how
+    the system speaks (topics, payloads, types, ranges); `line.yaml` says how it behaves and
+    refers to the AsyncAPI channels. Other protocols bring their own wire format later —
+    NodeSet2 XML for OPC UA, `.proto` for gRPC, OpenAPI for REST — and all are read into the
+    same internal contract.
+14. **Four files, four questions** — kept apart so none of them leaks into another:
+
+    | File | Answers | Read by | In Git | Secrets |
+    | --- | --- | --- | --- | --- |
+    | `contracts/asyncapi.yaml` + `contracts/line.yaml` | What *should* the system do? | plant, tests, web page | yes | never |
+    | `demo/config.json` | In which state does this plant *start*? (levels, counters, speed, active faults, random seed, physics) | plant; tests as a precondition | yes, one file per scenario | never |
+    | `.env` | *Where* does it run, and *who* may connect? | tests, Docker Compose | no — `.env.example` is | only here |
+    | `busproof.toml` | *How* do the tests run? (environments, timeouts, stance, reporters) | tests | yes | never — only variable *names* |
+
+    The behaviour file holds what a test can check: topology and the flow of units (stations,
+    transit times), variables with type, unit, range, normal range, warning and alarm limits and
+    a *safety-critical* flag, setpoints, commands with their allowed states, alarms with their
+    trigger, and the shape of a message (a whole state, or one value per topic). It does not
+    hold how the web page draws a machine, nor the physics of the simulation — those belong to
+    the page and to `config.json`. A test may read its *precondition* from `config.json`; what
+    is *correct* always comes from the contract, or the tests would only mirror the plant.
+15. **Secrets are off limits for every agent**, enforced where it can be and written down where
+    it cannot: permission rules and a guard before every tool call refuse `.env` files, a
+    `secrets/` folder and key files; a secret scan runs before each commit; and an agent that
+    sees such a file open in the editor stops and asks for it to be closed. The rules live in
+    `AGENTS.md`, which every assistant reads.
+
+To settle next:
+
+- **Requirements** — in `line.yaml`, or in a file of their own with a link to where they are
+  managed.
+
+To settle later:
+
+- **Fixtures** — what a test receives (`line`, `mes`, a bus, an evidence recorder) and how
+  their scope and setup work.
+- **Entities** — how things, aggregates and their signals are modelled, and how they come from
+  the AsyncAPI file.
+
+## 10 · Vision — horizon 2
+
+Where BusProof goes after the milestones above. Kept here so no idea is lost and none of them
+widens M1–M2.
+
+- **Tests from contracts, by an agent.** Test ideas (§4.2) become drafted tests; G1 and G2 stay.
+- **Exploratory learning.** Observe the bus, its addresses and events; from a recorded session
+  an agent proposes a test. Such a test pins *what happened* — which may be a bug — so a person
+  judges correctness at G2.
+- **Test basis.** Whatever the requirements come from — specifications, interface control
+  documents (ICDs), prose, tickets — is turned into structured requirements by a skill.
+- **Mocks** of neighbouring services, generated from AsyncAPI first; Protobuf (with Sparkplug B)
+  and ICDs later.
+- **Entity classes generated** from the AsyncAPI file instead of written by hand, so a contract
+  change shows up as type errors in the editor.
+- **Standardised evidence.** The evidence maps onto ISO/IEC/IEEE 29119-3 documents; the audit
+  trail (who changed and approved what, when) comes from Git and reviews, in the sense of
+  21 CFR Part 11.
+- **Beyond functional tests**, structured by ISO/IEC 25010: performance, security, reliability,
+  scalability — proposed as test ideas like the functional ones.
+- **Gaps and maintenance.** Find what is not covered, propose tests for it, keep the regression
+  suite current when the contract changes (IDEAS §8).
+- **Honest numbers instead of one score**: contract coverage, requirement coverage and catch
+  power side by side. A single trust score invites optimising the number.
+- **Branch-aware runs**: smoke and affected tests on a feature branch, full regression on
+  `main`, non-functional tests at a release — pytest markers and CI rules.
+- **A skill bench** (idea from JavaBench): fixed tasks against the demo plant ("write a test for
+  REQ-7"); a skill's test counts only if it is green on the healthy plant *and* red with the
+  fault injected; compared across context variants. Measures skills instead of claiming them.
+- **A larger twin** (OPC UA, several lines) as an external system under test.
+- **gRPC**, with `.proto` files as its contract.
+- **Later, if needed:** an MCP server, other brokers (Kafka, AMQP), a UI beyond the demo page.
