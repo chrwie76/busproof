@@ -244,7 +244,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–20):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–21):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -323,17 +323,16 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–20):
     class Capper(Machine):
         """The capping station: closes bottles, counts good and rejected ones."""
 
-        def __init__(self, bus: Bus):
-            super().__init__(bus, name="capper")
-            self.state = self.state_signal("state")
-            self.good_count = self.counter("good_count")
-            self.reject_count = self.counter("reject_count")
+        def __init__(self, bus: Bus, topics: Topics):
+            super().__init__(bus, topics, name="capper")  # gives it `state`, as PackML does
+            self.good_count = self.signal("good_count")
+            self.reject_count = self.signal("reject_count")
 
         async def start(self) -> None:
             await self.send("start")
     ```
 
-    The library provides the building blocks (`Machine`, `Signal`, `Counter`, `expect`); the
+    The library provides the building blocks (`Machine`, `Line`, `Signal`, `expect`); the
     machine classes belong to the test project, like page objects. Fixtures come in layers:
     `bus` (the connection from `busproof.toml` and the environment, plus the recorder that keeps
     every message as evidence) → `line` (the machine objects) → `running_line` (precondition:
@@ -354,6 +353,15 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–20):
     must hold all along, both in seconds as everywhere in Python. *Not* `holds`: in PackML,
     `Hold` is a command and `Held` a state, and an industrial reader would read
     `line.state.holds(...)` as "the line goes to Held".
+21. **Each setting lives where it changes.** *What the plant offers* — topics, signal names,
+    types, states — is in the **contract**, read by the plant and the tests alike, so the two
+    cannot drift apart. *Where it runs* — broker address, user, password — is in **`.env`**,
+    which changes with the environment and stays closed to agents. *How we test* — which
+    contract, which line, default waiting time — is in **`busproof.toml`** of the test project.
+    The part of a topic that differs per site (`acme/line1/…`) is an AsyncAPI channel
+    parameter, filled from `busproof.toml`. Topics never go into `.env`: an agent writing a
+    test must be able to read them. Until the contract is read (M1 step 5), a machine gets its
+    topics from a function the test writes by hand: `topics("capper", "good_count")`.
 
 To settle later:
 

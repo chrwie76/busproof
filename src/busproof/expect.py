@@ -22,7 +22,7 @@ from collections.abc import Callable
 from typing import NoReturn, TypeGuard
 
 from busproof.message import Message
-from busproof.signals import Signal
+from busproof.signals import Consensus, Signal
 
 # Seconds to wait when a test does not say. busproof.toml will be able to change it.
 DEFAULT_WITHIN = 5.0
@@ -32,12 +32,12 @@ class ExpectationFailed(AssertionError):
     """An expectation the system did not meet. An AssertionError, so pytest reports a failure."""
 
 
-def expect(signal: Signal) -> "Expectation":
+def expect(signal: Signal | Consensus) -> "Expectation":
     return Expectation(signal)
 
 
 class Expectation:
-    def __init__(self, signal: Signal):
+    def __init__(self, signal: Signal | Consensus):
         self.signal = signal
         self.recorder = signal.bus.recorder
         self._window_start = 0
@@ -91,12 +91,11 @@ class Expectation:
 
     def _open_window(self) -> None:
         self._window_start = len(self.recorder)
-        self._before = self.recorder.latest(self.signal.topic)
+        self._before = self.signal.latest()
 
     def _fresh(self) -> list[Message]:
-        """Messages received on the signal's topic since the window opened."""
-        messages = self.recorder.messages(self.signal.topic, since=self._window_start)
-        return [message for message in messages if message.direction == "received"]
+        """Messages received for the signal since the window opened."""
+        return self.signal.fresh(self._window_start)
 
     def _values(self) -> list[object]:
         """The value at the start of the window (if any), then every value received in it."""
@@ -137,7 +136,7 @@ class Expectation:
                 pass  # the loop checks once more, then gives up
 
     def _seen(self, window: float) -> str:
-        return describe(self._before, self._fresh(), window, self.signal.topic)
+        return describe(self._before, self._fresh(), window, self.signal.silent())
 
     def _fail(self, what: str, detail: str) -> NoReturn:
         raise ExpectationFailed(f"expected {self.signal.name} {what} — {detail}")
