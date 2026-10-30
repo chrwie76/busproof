@@ -1,0 +1,20 @@
+# The demo line: which machines make it, in which order, and where it stands.
+#
+# Mounted into the service of every machine, and read by the tests: so the plant publishes
+# under the address the tests listen to, from one file. On a real line this is what an
+# integrator sets at commissioning, written down.
+
+name: line1
+
+# Fills {enterprise}/{site}/{area}/{line} in the topics of every machine contract (ISA-95).
+address:
+  enterprise: acme
+  site: plant1
+  area: packaging
+  line: line1
+
+# In the order a bottle passes them. Each names its contract and the state machine it follows.
+machines:
+  filler: {contract: machines/filler.asyncapi.yaml, states: packml.yaml}
+  capper: {contract: machines/capper.asyncapi.yaml, states: packml.yaml}
+  inspector: {contract: machines/inspector.asyncapi.yaml, states: packml.yaml}

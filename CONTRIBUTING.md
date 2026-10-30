@@ -36,6 +36,18 @@ If you know a Node/Playwright project, the right-hand column is the file you alr
 Coming in later milestones: `busproof.toml` (settings of a test project, the counterpart of
 `playwright.config.ts`) and `docker-compose.yml` (the demo plant).
 
+## Where things live
+
+| Folder | What | Its tests answer |
+| --- | --- | --- |
+| `src/busproof/` | the tool | `tests/unit/` — one file per module, same name: `expect.py` ↔ `test_expect.py` |
+| repository files | guard, templates, packaging | `tests/repo/` |
+| `demo/plant/` | the system under test | `demo/plant/tests/` — does the simulation compute right? |
+| `demo/line-tests/` | the test project, as a customer writes it | it *is* the tests — of the plant, written with BusProof |
+
+Shared fixtures of the tool's tests (`bus`, `clock`, `deliver_later`) are in `tests/conftest.py`.
+See [demo/README.md](demo/README.md) for the rules that keep the three apart.
+
 ## Rules
 
 - Every piece gets a test; the library's tests run offline.

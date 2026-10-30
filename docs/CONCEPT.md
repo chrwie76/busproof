@@ -124,15 +124,19 @@ So the agent layer ships as:
 
 | Playbook step | Gate | Skill (optional) |
 | --- | --- | --- |
-| 1 Understand the system: read the AsyncAPI file, derive test ideas | | `plan-tests` |
-| 2 Plan: state transitions, boundary values, equivalence classes | **G1** | `plan-tests` |
-| 3 Write the test | | `write-test` |
-| 4 Prove it catches: inject a fault, the test must turn red | | `write-test` |
-| 5 Review and accept | **G2** | `review-test` (assists, does not decide) |
-| 6 Run, produce evidence | | — |
-| 7 Judge a red run | **G3** | `triage-run` |
-| 8 Explore under a charter | | `explore-system` |
-| 9 Release | **G4** | — |
+| 1 Agree the contract — or discover it from a recording, if none is written | | `draft-contract` |
+| 2 Understand the system: read the contract, derive test ideas | | `plan-tests` |
+| 3 Plan: state transitions, boundary values, equivalence classes | **G1** | `plan-tests` |
+| 4 Write the test | | `write-test` |
+| 5 Prove it catches: inject a fault, the test must turn red | | `write-test` |
+| 6 Review and accept | **G2** | `review-test` (assists, does not decide) |
+| 7 Run, produce evidence | | — |
+| 8 Judge a red run | **G3** | `triage-run` |
+| 9 Explore under a charter | | `explore-system` |
+| 10 Release | **G4** | — |
+
+The playbook itself is [docs/PLAYBOOK.md](PLAYBOOK.md), a living draft: a step is written down
+once it has been gone through for real on the demo line.
 
 ### 4.5 Evidence and where the person sits
 
@@ -206,18 +210,25 @@ party that wanted it green is not evidence.
 ## 7 · Repository layout (target)
 
 ```
-busproof/
-├─ src/busproof/          core (layer 1) and knowledge (layer 2)
-│  ├─ expect.py  thing.py  bus.py  plugin.py
-│  ├─ buses/     rest.py  mqtt.py
-│  └─ contract/  asyncapi.py  openapi.py  ideas.py
-├─ demo/                  the demo plant + its AsyncAPI/OpenAPI files (layer 3)
-├─ examples/              example suites against the demo plant
-├─ skills/                SKILL.md files (layer 4)
-├─ playbook/              the one process playbook (layer 4)
-├─ docs/                  IDEAS, CONCEPT, knowledge pages
-└─ tests/                 the library's own tests (offline)
+busproof/                    the tool — the repository root is the library
+├─ src/busproof/             core (layer 1) and knowledge (layer 2)
+├─ tests/                    the tool's own tests: unit/ (one file per module), repo/, later integration/
+├─ skills/  playbook/        layer 4
+├─ docs/                     IDEAS, CONCEPT, knowledge pages
+│
+└─ demo/                     a customer's world, built to show the tool (layer 3)
+   ├─ compose.yaml           broker + plant + web page
+   ├─ contracts/             machines/*.asyncapi.yaml, packml.yaml, line.yaml — the agreement
+   ├─ plant/                 the system under test; knows nothing of BusProof
+   └─ line-tests/            the test project, written as a customer would
+      ├─ busproof.toml  conftest.py
+      ├─ machines/           machine objects (the page objects)
+      └─ tests/              control/  product/  timing/
 ```
+
+Three kinds of tests, three questions: `tests/` — does the tool work? `demo/plant/tests/` — does
+the simulation compute right? `demo/line-tests/` — does the *plant* work, and does the suite
+catch its faults? Only the last is what the tool is for.
 
 ## 8 · Milestones — each one shows something
 
@@ -227,7 +238,7 @@ busproof/
 | **M1** | The language | A `line` fixture with hand-written, typed entity classes (autocompletion in VS Code, like page objects); `expect` with 3 matchers; a recorder that buffers every message of a test; fake bus and MQTT adapter; tests offline. |
 | **M2** | The demo plant | Own small PackML simulation on MQTT (UNS topics, mounted AsyncAPI file) + fault switch + HTML page, `make demo` with secrets generated on first start and the security profiles `open` and `password` (default); an example suite catches a product fault a control suite misses. README shows it. **First public release, also on PyPI** (Trusted Publishing, TestPyPI first). |
 | **M3** | Two systems | MES service over REST (OpenAPI); tests that span MES order → line → MQTT result; security profile `mtls`. |
-| **M4** | Knowledge | AsyncAPI/OpenAPI import → contract → test ideas checklist; templates; first knowledge pages. |
+| **M4** | Knowledge | AsyncAPI/OpenAPI import → contract → test ideas checklist; **a contract discovered from a recording of the demo plant**, with its origin, and the loop that sharpens it (decision 24); templates; first knowledge pages. |
 | **M5** | Evidence | The five parts of §4.5: JUnit + JSONL + a report for people with *pass / fail / inconclusive / skipped-with-reason*, mapped to the ISO/IEC/IEEE 29119-3 test documents. |
 | **M6** | Agent layer | The playbook and its skills, tried against the demo plant; a recorded session in the docs. |
 | **M7** | Catch power | A fault catalog for the demo plant and the fraction the shipped suite catches, stated honestly. |
@@ -237,7 +248,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–17):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -252,8 +263,12 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–17):
 8. **One playbook for the whole process; skills are its agent form** and point to its steps (§4.4).
 9. **Plain pytest, no pytest-bdd** (§6).
 10. **A vision beyond the milestones** is kept in §10, so M1–M2 can stay small.
-11. **An own small simulation** in `demo/`, not an existing twin; contract files are mounted
-    into it.
+11. **An own small simulation** in `demo/plant/`, not an existing twin; contract files are mounted
+    into it. **One service per machine** — one image, started as `filler`, `capper` or
+    `inspector` — as one contract per machine (decision 23) asks for: a single machine can be
+    started and tested alone (FAT), one can be stopped while the others run, and the line's
+    consensus shows it. The machines pass a bottle on to each other over MQTT, as in a real
+    line; how exactly is settled in M2.
 12. **The web page is plain HTML** on MQTT WebSockets, no Streamlit, no backend.
 13. **Contracts: the wire and the behaviour are two files.** For MQTT, `asyncapi.yaml` says how
     the system speaks (topics, payloads, types, ranges); `line.yaml` says how it behaves and
@@ -264,8 +279,8 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–17):
 
     | File | Answers | Read by | In Git | Secrets |
     | --- | --- | --- | --- | --- |
-    | `contracts/asyncapi.yaml` + `contracts/line.yaml` | What *should* the system do? | plant, tests, web page | yes | never |
-    | `demo/config.json` | In which state does this plant *start*? (levels, counters, speed, active faults, random seed, physics) | plant; tests as a precondition | yes, one file per scenario | never |
+    | `demo/contracts/` (AsyncAPI per machine, `packml.yaml`, `line.yaml`; decision 23) | What *should* the system do? | plant, tests, web page | yes | never |
+    | `demo/plant/config.json` | In which state does this plant *start*? (levels, counters, speed, active faults, random seed, physics) | plant; tests as a precondition | yes, one file per scenario | never |
     | `.env` | *Where* does it run, and *who* may connect? | tests, Docker Compose | no — `.env.example` is | here, or generated into `demo/secrets/` (decision 16) |
     | `busproof.toml` | *How* do the tests run? (environments, timeouts, stance, reporters) | tests | yes | never — only variable *names* |
 
@@ -299,18 +314,124 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–17):
     as the default in M2, `mtls` after it. Under `mtls` the web page still connects with a
     password, because browsers handle client certificates poorly. The `.env.example` names file
     *paths* for CA, certificate and key — never their contents.
+18. **Entities and fixtures follow the page-object pattern** — the same shape as a Playwright
+    project, translated:
 
-To settle next:
+    | Playwright | BusProof | What it is |
+    | --- | --- | --- |
+    | `page` | `bus` | the connection |
+    | `Locator` | `Signal` | a *handle* on a value, not the value; `expect` reads it, and waits |
+    | page object | machine object (`Capper`) | a machine's signals and commands — no `expect` inside |
+    | collector of page objects | `Line` | the machines of a line; the line's state is their consensus |
 
-- **Requirements** — in `line.yaml`, or in a file of their own with a link to where they are
-  managed.
+    A machine class is written **in its constructor**, plain Python with no hidden mechanism,
+    and names signals by their name in `line.yaml`, never by topic:
+
+    ```python
+    class Capper(Machine):
+        """The capping station: closes bottles, counts good and rejected ones."""
+
+        def __init__(self, bus: Bus, topics: Topics):
+            super().__init__(bus, topics, name="capper")  # gives it `state`, as PackML does
+            self.good_count = self.signal("good_count")
+            self.reject_count = self.signal("reject_count")
+
+        async def start(self) -> None:
+            await self.send("start")
+    ```
+
+    The library provides the building blocks (`Machine`, `Line`, `Signal`, `expect`); the
+    machine classes belong to the test project, like page objects. Fixtures come in layers:
+    `bus` (the connection from `busproof.toml` and the environment, plus the recorder that keeps
+    every message as evidence) → `line` (the machine objects) → `running_line` (precondition:
+    the line in `Execute`, counter baselines taken). Generating the machine classes from the
+    contract stays in the vision (§10).
+19. **Three worlds, one repository, clean seams.** The tool is the repository root; `demo/`
+    holds a customer's world — `contracts/`, `plant/` (the system under test) and `line-tests/`
+    (the test project) — as one uv workspace (§7). Three rules keep them apart, each to be
+    checked by a test: the tool names no plant; the plant knows nothing of BusProof; the test
+    project uses only `from busproof import …` and has its own `pyproject.toml` and
+    `busproof.toml`. So each part can later leave for a repository of its own unchanged — the
+    plant as an image with its contracts, the test project as a template — by deleting the one
+    line that takes `busproof` from the workspace instead of from PyPI.
+20. **Matcher names tell the kind of check.** `to_be…` asks where a signal ends up
+    (`to_be("Execute")`, `to_be_in({...})`); a verb asks what it does over time (`rises_by(5)`,
+    `remains(...)`, `remains_between(lo, hi, ...)`, `passes_through(state)`,
+    `happens_before(other)`). `within=` for what must happen at some point, `during=` for what
+    must hold all along, both in seconds as everywhere in Python. *Not* `holds`: in PackML,
+    `Hold` is a command and `Held` a state, and an industrial reader would read
+    `line.state.holds(...)` as "the line goes to Held".
+21. **Each setting lives where it changes.** *What the plant offers* — topics, signal names,
+    types, states — is in the **contract**, read by the plant and the tests alike, so the two
+    cannot drift apart. *Where it runs* — broker address, user, password — is in **`.env`**,
+    which changes with the environment and stays closed to agents. *How we test* — which
+    line file, default waiting time — is in **`busproof.toml`** of the test project.
+    Topics follow ISA-95 as a Unified Namespace does: `{enterprise}/{site}/{area}/{line}/
+    {machine}`, in the demo `acme/plant1/packaging/line1/capper` — `acme` being the classic
+    made-up company of software examples, so no reader mistakes it for a real one. **One message
+    per machine** carries its whole state, `{"state": 6, "good_count": 123, …}`, sent
+    again on every change and at a steady pace: each machine is a unit of its own (PackML), the
+    line's state stays what BusProof derives, and a repeated value is fresh evidence for
+    `remains`. A signal is a topic plus a path into the payload, so a plant that sends one
+    message per line works too. The part of a topic that differs per site is an AsyncAPI
+    channel parameter, filled from **`line.yaml`** — not from `busproof.toml`, as first written
+    here: the plant must know where it stands too, and it reads no BusProof file. Mounted into
+    each machine's service, the same `line.yaml` is what the plant publishes under and what the
+    tests read, so there is one source. On a real line this is the prefix an integrator sets
+    at commissioning; `line.yaml` is its written-down form. Topics never go into `.env`: an
+    agent writing a test must be able to read them. A machine gets its topics from a function,
+    `topics("capper", "good_count")`; `read_line("…/line.yaml").topics` builds it from the
+    contracts — what a machine *sends* are its signals, what it *receives* its commands — and a
+    name the contract lacks fails at once, listing the names it has.
+22. **States are numbers on the wire and names in a test.** The demo plant sends PackTags
+    numbers (`"state": 6`), as real controllers do and as OPC UA and gRPC do anyway. A test
+    reads them through an `IntEnum` the test project writes (`State.EXECUTE`, with
+    autocompletion); the recorder keeps the raw number as evidence, a failure shows both
+    (`EXECUTE (6)`), and a number the enum does not know stays a number — itself a finding.
+    The **state machine** — states, the commands that leave each, the acting states a machine
+    leaves on its own — is in `packml.yaml` (decision 23); the library knows no state name, so a
+    plant on Weihenstephan Standards or its maker's own states brings its own file. The demo uses
+    the PackML core of 12 states (Stopped, Resetting, Idle, Starting, Execute, Holding, Held,
+    Unholding, Stopping, Aborting, Aborted, Clearing); Suspend and Complete can follow without
+    rebuilding. Commands go to one topic per machine, `…/capper/cmd`, as
+    `{"command": "Start"}`.
+23. **One contract per machine, a line made of them.** Each machine has its own AsyncAPI file
+    in `demo/contracts/machines/`, as each machine builder delivers its own interface — and as
+    AsyncAPI means it: one document per application. Its topics start with
+    `{enterprise}/{site}/{area}/{line}/` and it names no server, so it does not know where it
+    stands: one contract serves a test at the maker's (FAT) and in the plant (SAT). The state
+    machine all three follow is `packml.yaml`, once. `line.yaml` only composes: which machines,
+    in which order, and the values of the address parameters. This refines decisions 13 and
+    14, which spoke of one `asyncapi.yaml`.
+24. **Contracts are central, but not an entry ticket.** Many plants run large machines with no
+    written contract: it lives in the PLC program, the HMI tag list, a few heads — and in what
+    the bus carries every day. BusProof meets them there instead of shutting them out. Step 1
+    of the playbook has two ways in: **agree** a contract that exists, or **discover** one —
+    listen in the `observe` stance, draft a contract from what was seen (topics, fields,
+    types, observed ranges, states and the changes between them), and a person who knows the
+    plant agrees it line by line. *Observed is not right*: a draft pins what the plant does,
+    which may be a fault of many years. So every contract carries its **origin** — delivered
+    by its maker, observed, agreed by whom and when — provenance for the test basis as for the
+    tests. Then the **loop**: tests from the contract run against the plant, and each
+    deviation asks *the plant or the contract?* — so the contract is sharpened by use and
+    shows how far it carries. Agents help most here, in legacy plants: drafting from
+    recordings, listing open questions, proposing what a deviation means; a person decides
+    each time. This is what sets BusProof apart, and once it works it is shown as such (M4).
+25. **The same tests anywhere: `BUSPROOF_ENV` picks, the environment supplies.** BusProof reads
+    environment variables, never the `.env` file itself; `.env` is a local convenience, and CI
+    sets the same names as its variables (GitLab: CI/CD variables, the password masked and
+    protected). `BUSPROOF_ENV` picks a section of `busproof.toml`, which says which `line.yaml`
+    counts; so a second plant is a section, not a change to a test. The fixtures every project
+    needs — `settings`, `contract`, `bus` — come with BusProof as a pytest plugin, as `page`
+    comes with pytest-playwright; what belongs to one plant — `line`, `running_line` — is in the
+    project's `conftest.py`. Until the plant exists (M2), a **stand-in** in the test project
+    plays the machines over the fake bus from the same contracts (`make line-tests`). It proves
+    the wiring and that the tests can turn red; it proves nothing about a plant.
 
 To settle later:
 
-- **Fixtures** — what a test receives (`line`, `mes`, a bus, an evidence recorder) and how
-  their scope and setup work.
-- **Entities** — how things, aggregates and their signals are modelled, and how they come from
-  the AsyncAPI file.
+- **Requirements** — in `line.yaml`, or in a file of their own with a link to where they are
+  managed. Needed by M5 (evidence).
 
 ## 10 · Vision — horizon 2
 

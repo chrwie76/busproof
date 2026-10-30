@@ -13,7 +13,7 @@ import pytest
 
 from guard import check
 
-GUARD = Path(__file__).parent.parent / "tools" / "guard.py"
+GUARD = Path(__file__).parents[2] / "tools" / "guard.py"
 
 
 @pytest.mark.parametrize(

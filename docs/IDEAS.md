@@ -54,12 +54,14 @@ A plant is asynchronous: a command is answered now, its effect arrives later, a 
 a unit has travelled. An assertion that reads once is a race; a test that sleeps first is a guess.
 
 - Every matcher **reads until the plant agrees or a deadline says it will not.**
-- Matchers worth having from the start: `to_be_in(state)`, `to_equal(v)`, `to_increase(by)`,
-  `to_stay(during)`, `to_stay_above/below(limit, during)`; later `to_pass_through(state)`,
-  `to_happen_before(other)`, `to_be_within(lo, hi)`.
+- Matchers worth having from the start: `to_be(v)`, `to_be_in(states)`, `rises_by(n)`,
+  `remains(during)`, `remains_between(lo, hi, during)`; later `passes_through(state)`,
+  `happens_before(other)`. The name tells the kind of check: `to_be…` asks where a signal ends
+  up, a verb asks what it does over time; `within=` for what must happen at some point,
+  `during=` for what must hold all along.
 - **A baseline is read inside the window**, not before it: a counter that moved during setup is
   not evidence that it moves now.
-- **Silence is not stability.** `to_stay` on a signal that never reports must fail — otherwise a
+- **Silence is not stability.** `remains` on a signal that never reports must fail — otherwise a
   misspelt name is the easiest green there is.
 - Several expectations can run **concurrently** (`asyncio.gather`): "good units come out *and* no
   rejects are added in the same window". *Why:* a "no rejects" check alone passes on a line that

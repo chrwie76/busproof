@@ -1,0 +1,13 @@
+# How the tests of the packaging line run. BUSPROOF_ENV picks the section (default: local).
+# Where the broker is and how to log in are environment variables, never in this file.
+
+[env.local]
+line = "../contracts/line.yaml"
+
+[env.ci]
+line = "../contracts/line.yaml"
+
+# No broker and no plant: a stand-in answers over a fake bus (stand_in.py). `make line-tests`.
+[env.offline]
+line = "../contracts/line.yaml"
+bus = "fake"
