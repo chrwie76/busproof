@@ -34,6 +34,30 @@ channels:
     messages:
       command:
         $ref: "#/components/messages/command"
+  settings:
+    address: "{enterprise}/{site}/{area}/{line}/capper/set"
+    description: New parameters for the machine. It reports the new values in its status.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      settings:
+        $ref: "#/components/messages/settings"
+  online:
+    address: "{enterprise}/{site}/{area}/{line}/capper/online"
+    description: |
+      Retained. The machine sends true when it connects. Its MQTT last will sends false for it
+      when it is gone, which tells "gone" from "has nothing to say".
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      online:
+        $ref: "#/components/messages/online"
 
 operations:
   reportStatus:
@@ -44,13 +68,21 @@ operations:
     action: receive
     channel: {$ref: "#/channels/command"}
     summary: The capper takes a command.
+  takeSettings:
+    action: receive
+    channel: {$ref: "#/channels/settings"}
+    summary: The capper takes new parameters.
+  reportOnline:
+    action: send
+    channel: {$ref: "#/channels/online"}
+    summary: The capper says it is there; its last will says when it is gone.
 
 components:
   messages:
     status:
       payload:
         type: object
-        required: [state, good_count, reject_count]
+        required: [state, good_count, reject_count, speed, torque_target]
         properties:
           state:
             type: integer
@@ -69,9 +101,19 @@ components:
             minimum: 0
             maximum: 5
             description: Capping torque of the last bottle, in Nm.
+          speed:
+            type: number
+            minimum: 0
+            maximum: 120
+            description: Target speed, in bottles per minute.
+          torque_target:
+            type: number
+            minimum: 0
+            maximum: 5
+            description: Target capping torque, in Nm.
       examples:
         - name: running
-          payload: {state: 6, good_count: 1234, reject_count: 4, torque: 2.1}
+          payload: {state: 6, good_count: 1234, reject_count: 4, torque: 2.1, speed: 60.0, torque_target: 2.0}
     command:
       payload:
         type: object
@@ -83,3 +125,30 @@ components:
       examples:
         - name: start
           payload: {command: Start}
+    settings:
+      payload:
+        type: object
+        minProperties: 1
+        additionalProperties: false
+        properties:
+          speed:
+            type: number
+            minimum: 0
+            maximum: 120
+          torque_target:
+            type: number
+            minimum: 0
+            maximum: 5
+      examples:
+        - name: change
+          payload: {speed: 60.0}
+    online:
+      payload:
+        type: object
+        required: [online]
+        properties:
+          online:
+            type: boolean
+      examples:
+        - name: there
+          payload: {online: true}

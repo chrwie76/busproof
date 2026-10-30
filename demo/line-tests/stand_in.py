@@ -36,9 +36,24 @@ class StandInMachine:
 
 # What each machine reports besides its state, and which of it counts up while running.
 MACHINES: dict[str, tuple[dict[str, object], list[str]]] = {
-    "filler": ({"filled_count": 0, "fill_level": 98.0, "tank_level": 80.0}, ["filled_count"]),
-    "capper": ({"good_count": 0, "reject_count": 0, "torque": 2.0}, ["good_count"]),
-    "inspector": ({"pass_count": 0, "reject_count": 0, "last_fill_level": 98.0}, ["pass_count"]),
+    "filler": (
+        {
+            "filled_count": 0,
+            "fill_level": 98.0,
+            "tank_level": 80.0,
+            "speed": 60.0,
+            "fill_target": 98.0,
+        },
+        ["filled_count"],
+    ),
+    "capper": (
+        {"good_count": 0, "reject_count": 0, "torque": 2.0, "speed": 60.0, "torque_target": 2.0},
+        ["good_count"],
+    ),
+    "inspector": (
+        {"pass_count": 0, "reject_count": 0, "last_fill_level": 98.0, "min_fill_level": 90.0},
+        ["pass_count"],
+    ),
 }
 
 

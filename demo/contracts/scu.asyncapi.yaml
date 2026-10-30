@@ -1,0 +1,114 @@
+asyncapi: 3.0.0
+
+info:
+  title: SCU
+  version: 1.0.0
+  description: |
+    The central unit of a bottling line: takes commands for the whole line, passes them on to the
+    machines in the order line.yaml gives, reports a line state of its own, and reacts when a
+    machine fails or is gone. It follows the PackML state machine in packml.yaml.
+
+    Its state is a claim, not the truth about the machines: each machine reports for itself, and
+    the two can differ. It counts no product; each station counts its own.
+
+    Abort is a logical stop for the whole line, not a safety function. A real emergency stop is a
+    hard-wired safety circuit, never a message on a bus.
+
+    Where it stands is not part of this contract: the four address parameters are filled by
+    line.yaml. No `servers` either — which broker, is a matter of the environment.
+
+channels:
+  status:
+    address: "{enterprise}/{site}/{area}/{line}/scu"
+    description: The SCU's whole state, sent on every change and at least once a second.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise, e.g. acme"}
+      site: {description: "ISA-95 site, e.g. plant1"}
+      area: {description: "ISA-95 area, e.g. packaging"}
+      line: {description: "ISA-95 line, e.g. line1"}
+    messages:
+      status:
+        $ref: "#/components/messages/status"
+  command:
+    address: "{enterprise}/{site}/{area}/{line}/scu/cmd"
+    description: A PackML command for the whole line. One the SCU does not accept is ignored.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      command:
+        $ref: "#/components/messages/command"
+  online:
+    address: "{enterprise}/{site}/{area}/{line}/scu/online"
+    description: |
+      Retained. The SCU sends true when it connects. Its MQTT last will sends false for it when
+      it is gone, which tells "gone" from "has nothing to say".
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      online:
+        $ref: "#/components/messages/online"
+
+operations:
+  reportStatus:
+    action: send
+    channel: {$ref: "#/channels/status"}
+    summary: The SCU reports the line state it claims, and why it reacted.
+  takeCommand:
+    action: receive
+    channel: {$ref: "#/channels/command"}
+    summary: The SCU takes a command for the whole line.
+  reportOnline:
+    action: send
+    channel: {$ref: "#/channels/online"}
+    summary: The SCU says it is there; its last will says when it is gone.
+
+components:
+  messages:
+    status:
+      payload:
+        type: object
+        required: [state, in_transit, faulted_machine]
+        properties:
+          state:
+            type: integer
+            description: PackTags state number (packml.yaml) the SCU claims for the line.
+            enum: [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 15]
+          in_transit:
+            type: integer
+            minimum: 0
+            description: Bottles on the transport between the stations right now.
+          faulted_machine:
+            type: [string, "null"]
+            description: The machine that made the SCU react, or null.
+      examples:
+        - name: running
+          payload: {state: 6, in_transit: 12, faulted_machine: null}
+        - name: held because of the capper
+          payload: {state: 11, in_transit: 3, faulted_machine: capper}
+    command:
+      payload:
+        type: object
+        required: [command]
+        properties:
+          command:
+            type: string
+            enum: [Reset, Start, Stop, Hold, Unhold, Abort, Clear]
+      examples:
+        - name: start
+          payload: {command: Start}
+    online:
+      payload:
+        type: object
+        required: [online]
+        properties:
+          online:
+            type: boolean
+      examples:
+        - name: there
+          payload: {online: true}

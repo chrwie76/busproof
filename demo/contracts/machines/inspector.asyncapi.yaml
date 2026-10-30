@@ -35,6 +35,30 @@ channels:
     messages:
       command:
         $ref: "#/components/messages/command"
+  settings:
+    address: "{enterprise}/{site}/{area}/{line}/inspector/set"
+    description: New parameters for the machine. It reports the new values in its status.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      settings:
+        $ref: "#/components/messages/settings"
+  online:
+    address: "{enterprise}/{site}/{area}/{line}/inspector/online"
+    description: |
+      Retained. The machine sends true when it connects. Its MQTT last will sends false for it
+      when it is gone, which tells "gone" from "has nothing to say".
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      online:
+        $ref: "#/components/messages/online"
 
 operations:
   reportStatus:
@@ -45,13 +69,21 @@ operations:
     action: receive
     channel: {$ref: "#/channels/command"}
     summary: The inspector takes a command.
+  takeSettings:
+    action: receive
+    channel: {$ref: "#/channels/settings"}
+    summary: The inspector takes new parameters.
+  reportOnline:
+    action: send
+    channel: {$ref: "#/channels/online"}
+    summary: The inspector says it is there; its last will says when it is gone.
 
 components:
   messages:
     status:
       payload:
         type: object
-        required: [state, pass_count, reject_count, last_fill_level]
+        required: [state, pass_count, reject_count, last_fill_level, min_fill_level]
         properties:
           state:
             type: integer
@@ -70,9 +102,14 @@ components:
             minimum: 0
             maximum: 100
             description: The fill level measured on the last bottle, in percent of its nominal volume.
+          min_fill_level:
+            type: number
+            minimum: 0
+            maximum: 100
+            description: A bottle below this fill level is rejected, in percent.
       examples:
         - name: running
-          payload: {state: 6, pass_count: 1201, reject_count: 9, last_fill_level: 97.8}
+          payload: {state: 6, pass_count: 1201, reject_count: 9, last_fill_level: 97.8, min_fill_level: 90.0}
     command:
       payload:
         type: object
@@ -84,3 +121,26 @@ components:
       examples:
         - name: start
           payload: {command: Start}
+    settings:
+      payload:
+        type: object
+        minProperties: 1
+        additionalProperties: false
+        properties:
+          min_fill_level:
+            type: number
+            minimum: 0
+            maximum: 100
+      examples:
+        - name: change
+          payload: {min_fill_level: 90.0}
+    online:
+      payload:
+        type: object
+        required: [online]
+        properties:
+          online:
+            type: boolean
+      examples:
+        - name: there
+          payload: {online: true}

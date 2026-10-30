@@ -18,3 +18,13 @@ machines:
   filler: {contract: machines/filler.asyncapi.yaml, states: packml.yaml}
   capper: {contract: machines/capper.asyncapi.yaml, states: packml.yaml}
   inspector: {contract: machines/inspector.asyncapi.yaml, states: packml.yaml}
+
+# The unit that coordinates the machines. Machines also take commands directly, so one can be
+# tested without it. What it should do is written here, so a test can check that it does.
+controller:
+  name: scu
+  contract: scu.asyncapi.yaml
+  states: packml.yaml
+  start_order: [inspector, capper, filler]  # from the end of the line, so nothing jams
+  stop_order: [filler, capper, inspector]  # from its beginning, so the line runs empty
+  on_machine_fault: Hold  # when a machine fails or is gone, the rest of the line holds

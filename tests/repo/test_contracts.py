@@ -23,6 +23,9 @@ PACKML = yaml.safe_load((CONTRACTS / "packml.yaml").read_text())
 STATES: dict[str, dict] = PACKML["states"]
 MACHINES = sorted((CONTRACTS / "machines").glob("*.asyncapi.yaml"))
 LINE = yaml.safe_load((CONTRACTS / "line.yaml").read_text())
+CONTROLLER = LINE["controller"]
+# Everything that speaks on the bus: the machines, and the unit that coordinates them.
+UNITS = [*MACHINES, CONTRACTS / CONTROLLER["contract"]]
 
 
 def test_every_state_has_its_own_number():
@@ -58,7 +61,7 @@ def test_there_is_a_machine_contract():
     assert MACHINES
 
 
-@pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
+@pytest.mark.parametrize("path", UNITS, ids=lambda path: path.name)
 def test_a_machine_contract_is_valid_asyncapi_3(path):
     contract = yaml.safe_load(path.read_text())
 
@@ -66,7 +69,7 @@ def test_a_machine_contract_is_valid_asyncapi_3(path):
     assert not errors, "\n".join(errors)
 
 
-@pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
+@pytest.mark.parametrize("path", UNITS, ids=lambda path: path.name)
 def test_every_example_fits_its_own_payload(path):
     # An example that breaks its own contract would mislead every reader, person or agent.
     contract = yaml.safe_load(path.read_text())
@@ -78,7 +81,7 @@ def test_every_example_fits_its_own_payload(path):
             assert not errors, f"{name}/{example['name']}: {errors}"
 
 
-@pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
+@pytest.mark.parametrize("path", UNITS, ids=lambda path: path.name)
 def test_every_channel_declares_exactly_the_parameters_in_its_address(path):
     # The JSON Schema cannot see this; AsyncAPI's own parser would.
     contract = yaml.safe_load(path.read_text())
@@ -88,7 +91,7 @@ def test_every_channel_declares_exactly_the_parameters_in_its_address(path):
         assert set(channel.get("parameters", {})) == in_address, name
 
 
-@pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
+@pytest.mark.parametrize("path", UNITS, ids=lambda path: path.name)
 def test_a_machine_sends_exactly_the_state_numbers_of_the_state_machine(path):
     contract = yaml.safe_load(path.read_text())
     status = contract["components"]["messages"]["status"]["payload"]["properties"]["state"]
@@ -96,7 +99,7 @@ def test_a_machine_sends_exactly_the_state_numbers_of_the_state_machine(path):
     assert sorted(status["enum"]) == sorted(state["number"] for state in STATES.values())
 
 
-@pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
+@pytest.mark.parametrize("path", UNITS, ids=lambda path: path.name)
 def test_a_machine_takes_exactly_the_commands_of_the_state_machine(path):
     contract = yaml.safe_load(path.read_text())
     command = contract["components"]["messages"]["command"]["payload"]["properties"]["command"]
@@ -105,7 +108,7 @@ def test_a_machine_takes_exactly_the_commands_of_the_state_machine(path):
     assert set(command["enum"]) == known
 
 
-@pytest.mark.parametrize("path", MACHINES, ids=lambda path: path.name)
+@pytest.mark.parametrize("path", UNITS, ids=lambda path: path.name)
 def test_a_machine_contract_does_not_say_where_it_stands(path):
     contract = yaml.safe_load(path.read_text())
 
@@ -151,3 +154,48 @@ def test_busproof_reads_the_demo_line_into_topics():
     assert line.topics("inspector", "Start") == Address(
         "acme/plant1/packaging/line1/inspector/cmd", ("command",)
     )
+
+
+# --- the controller ------------------------------------------------------------------------------
+
+
+def test_the_controller_starts_and_stops_exactly_the_machines_of_the_line():
+    assert sorted(CONTROLLER["start_order"]) == sorted(LINE["machines"])
+    assert sorted(CONTROLLER["stop_order"]) == sorted(LINE["machines"])
+
+
+def test_the_line_starts_from_its_end_and_stops_from_its_beginning():
+    bottle_order = list(LINE["machines"])
+
+    assert CONTROLLER["start_order"] == bottle_order[::-1]
+    assert CONTROLLER["stop_order"] == bottle_order
+
+
+def test_the_controllers_reaction_to_a_fault_is_a_command_of_the_state_machine():
+    known = {name for state in STATES.values() for name in state["commands"]}
+
+    assert CONTROLLER["on_machine_fault"] in known
+
+
+def test_the_controller_follows_a_state_machine_that_exists():
+    assert (CONTRACTS / CONTROLLER["states"]).is_file()
+
+
+def test_the_controller_fills_the_same_address_as_the_machines():
+    contract = yaml.safe_load((CONTRACTS / CONTROLLER["contract"]).read_text())
+
+    for channel in contract["channels"].values():
+        assert set(re.findall(r"{(\w+)}", channel["address"])) == set(LINE["address"])
+    assert contract["channels"]["status"]["address"].endswith(f"/{CONTROLLER['name']}")
+
+
+@pytest.mark.parametrize("path", UNITS, ids=lambda path: path.name)
+def test_every_unit_can_say_that_it_is_gone(path):
+    contract = yaml.safe_load(path.read_text())
+    sent = [
+        operation["channel"]["$ref"]
+        for operation in contract["operations"].values()
+        if operation["action"] == "send"
+    ]
+
+    assert "#/channels/online" in sent

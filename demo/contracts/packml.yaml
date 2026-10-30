@@ -8,6 +8,9 @@
 #   done      only in an *acting* state (…ing): where the machine goes on its own when finished
 #   commands  the commands it accepts in this state, and the state each one leads to
 # A command a state does not list is refused there.
+#
+# Abort is a logical stop. A real emergency stop is a hard-wired safety circuit, never a message
+# on a bus; nothing here is a safety function.
 
 name: PackML core
 initial: Stopped
