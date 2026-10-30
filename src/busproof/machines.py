@@ -33,6 +33,7 @@ class Address:
 
 # topics("capper", "good_count") -> Address("acme/…/line1/capper", ("good_count",))
 # topics("capper", "Start")      -> Address("acme/…/line1/capper/cmd", ("command",))
+# topics("capper", "set speed")  -> Address("acme/…/line1/capper/set", ("speed",))
 # Written by hand in a test, or `read_line(...).topics` from the contracts.
 Topics = Callable[[str, str], Address]
 
@@ -60,6 +61,16 @@ class Machine:
         for key in reversed(address.path):
             payload = {key: payload}
         await self.bus.send(address.topic, payload)
+
+    async def set(self, **values: object) -> None:
+        """Set parameters where the contract says: `set(speed=60)` sends `{"speed": 60}`. Values
+        that go to the same topic travel in one message, so they arrive together."""
+        messages: dict[str, dict[str, object]] = {}
+        for name, value in values.items():
+            address = self.topics(self.name, f"set {name}")
+            messages.setdefault(address.topic, {})[address.path[-1]] = value
+        for topic, message in messages.items():
+            await self.bus.send(topic, message)
 
 
 class Line:

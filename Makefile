@@ -37,7 +37,7 @@ define against_the_plant
 endef
 
 line-tests:  ## Test the whole line: the plant in Docker, on a real broker
-	$(call against_the_plant,,--ignore=tests/fat -m "not needs_transport")
+	$(call against_the_plant,,--ignore=tests/fat)
 
 fat:  ## Test the capper alone, without the line and without the SCU
 	$(call against_the_plant,mosquitto capper,tests/fat)

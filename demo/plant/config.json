@@ -8,6 +8,7 @@
       "filled_count": 0,
       "fill_level": 0.0,
       "tank_level": 80.0,
+      "bottle_supply": 5000,
       "speed": 60.0,
       "fill_target": 98.0
     },
@@ -15,7 +16,7 @@
       "good_count": 0,
       "reject_count": 0,
       "torque": 0.0,
-      "speed": 60.0,
+      "cap_supply": 5000,
       "torque_target": 2.0
     },
     "inspector": {
@@ -26,6 +27,7 @@
     },
     "scu": {
       "in_transit": 0,
+      "lost": 0,
       "faulted_machine": null
     }
   }

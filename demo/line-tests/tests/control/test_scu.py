@@ -41,7 +41,7 @@ async def test_the_line_stops_from_its_beginning(
     running_line: PackagingLine, bus: Bus, contract: LineContract
 ):
     await running_line.stop()
-    await expect(running_line.state).to_be(State.STOPPED, within=10)
+    await expect(running_line.state).to_be(State.STOPPED, within=15)
 
     assert command_order(bus, contract, "Stop") == ["filler", "capper", "inspector"]
 
@@ -70,3 +70,19 @@ async def test_a_machine_stopped_behind_the_scus_back_makes_the_line_hold(
     await expect(running_line.filler.state).to_be(State.HELD, within=10)
     await expect(running_line.inspector.state).to_be(State.HELD, within=10)
     await expect(running_line.capper.state).to_be(State.STOPPED, within=10)
+
+
+async def test_a_machine_out_of_caps_holds_the_line_until_it_is_refilled(
+    running_line: PackagingLine,
+):
+    await running_line.capper.set(cap_supply=2)
+
+    await expect(running_line.scu.faulted_machine).to_be("capper", within=20)
+    await expect(running_line.scu.state).to_be(State.HELD, within=10)
+    await expect(running_line.state).to_be(State.HELD, within=10)
+
+    await running_line.capper.set(cap_supply=1000)
+    await running_line.unhold()
+
+    await expect(running_line.state).to_be(State.EXECUTE, within=10)
+    await expect(running_line.scu.faulted_machine).to_be(None, within=10)

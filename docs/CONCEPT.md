@@ -248,7 +248,7 @@ release with a short changelog entry. Later candidates: an OPC UA adapter, shown
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–26):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–27):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -442,6 +442,16 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–26):
     message on a bus. Real plants often use OPC UA between SCU and machines. It comes later,
     on purpose, as the proof that *the same tests pass over another bus*; the plant keeps its
     communication in one place to make that possible.
+27. **Bottles take time, and supplies run out.** A bottle begins at the filler, and the SCU carries
+    it from station to station in the times `line.yaml` gives; each station judges it and counts
+    it itself. So a fault at the start of the line shows seconds later at its end, which is what
+    an asynchronous test is for. The belt runs in `Execute`, and on `Stop` until it is empty, so
+    the others stop only then; it stands still in `Hold`; an `Abort` loses what is on it, and the
+    SCU says how many. Hence a balance a test can check: filled = rejected + passed + in transit
+    + lost. Empty bottles, liquid and caps are start values in `config.json`, reported in the
+    status and refilled over `…/set`. An empty supply makes the machine hold, as PackML means
+    `Hold`: a reason inside the machine (`Suspend` would be one from outside). The SCU notices
+    and holds the line; after a refill, `Unhold` brings it back.
 
 To settle later:
 

@@ -59,6 +59,28 @@ channels:
     messages:
       online:
         $ref: "#/components/messages/online"
+  unit:
+    address: "{enterprise}/{site}/{area}/{line}/inspector/unit"
+    description: A bottle has arrived at this station, brought by the transport.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      unit:
+        $ref: "#/components/messages/unit"
+  unit_done:
+    address: "{enterprise}/{site}/{area}/{line}/inspector/unit/done"
+    description: The station has judged a bottle. The station counts it itself; the transport takes it on.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      unit_done:
+        $ref: "#/components/messages/unit_done"
 
 operations:
   reportStatus:
@@ -77,6 +99,14 @@ operations:
     action: send
     channel: {$ref: "#/channels/online"}
     summary: The inspector says it is there; its last will says when it is gone.
+  takeUnit:
+    action: receive
+    channel: {$ref: "#/channels/unit"}
+    summary: A bottle arrives at the inspector.
+  reportUnitDone:
+    action: send
+    channel: {$ref: "#/channels/unit_done"}
+    summary: The inspector says what became of a bottle.
 
 components:
   messages:
@@ -144,3 +174,39 @@ components:
       examples:
         - name: there
           payload: {online: true}
+    unit:
+      payload:
+        type: object
+        required: [unit, bottle_fill_level]
+        properties:
+          unit:
+            type: string
+            description: Which bottle has arrived.
+          bottle_fill_level:
+            type: number
+            minimum: 0
+            maximum: 100
+            description: How full the filler filled it, in percent of the nominal volume.
+      examples:
+        - name: arrived
+          payload: {unit: bottle-17, bottle_fill_level: 97.8}
+    unit_done:
+      payload:
+        type: object
+        required: [unit, bottle_fill_level, result]
+        properties:
+          unit:
+            type: string
+            description: Which bottle this is about.
+          bottle_fill_level:
+            type: number
+            minimum: 0
+            maximum: 100
+            description: How full the filler filled it, in percent of the nominal volume.
+          result:
+            type: string
+            enum: [pass, reject, refused]
+            description: Passed on, rejected, or refused because the machine was not producing.
+      examples:
+        - name: passed
+          payload: {unit: bottle-17, bottle_fill_level: 97.8, result: pass}

@@ -22,4 +22,3 @@ pythonpath = ["."]
 addopts = "--strict-markers --import-mode=importlib"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-markers = ["needs_transport: needs bottles to travel; the plant gets that in M2 step 4"]

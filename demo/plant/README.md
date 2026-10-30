@@ -27,14 +27,17 @@ The broker listens on port 1884 of this computer, so the demo can run next to an
 | `pyproject.toml`, `Dockerfile` | The plant as a package and as one image for all machines |
 | `src/plant/machine.py` | What every machine does: follow the state machine, take parameters, report. No MQTT in it |
 | `src/plant/filler.py`, `capper.py`, `inspector.py` | What only that machine does, in a few lines |
-| `src/plant/scu.py` | The central unit: passes commands on in order, reports the line state it claims, reacts to a machine that fails or is gone |
+| `src/plant/scu.py` | The central unit: passes commands on in order, reports the line state it claims, reacts to a machine that fails or is gone, and carries the bottles |
 | `src/plant/contracts.py` | Reads the mounted contracts. There is no fallback copy: a missing file stops the service |
 | `src/plant/link.py` | The one place that touches a bus, so another protocol replaces this file only |
-| `config.json` | The state the plant starts in, and its pace |
+| `config.json` | The state the plant starts in: supplies, parameters, its pace |
 | `tests/` | The plant's own tests: does the simulation compute right? Tests *of* the plant are in `../line-tests` |
 
 A unit reports its whole state after a command, on every change and as a heartbeat. Its MQTT
 last will says when it is gone.
 
-Still to come in M2: bottles that travel (the inspector judges none yet), faults to switch on, and
-the web page (`web/index.html`).
+A bottle begins at the filler and takes the times in `../contracts/line.yaml` to reach each
+station, which judges and counts it itself. When bottles, liquid or caps run out, the machine holds
+and the SCU holds the line; refill over `…/set`, then `Unhold`.
+
+Still to come in M2: faults to switch on, and the web page (`web/index.html`).

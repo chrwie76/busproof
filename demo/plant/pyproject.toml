@@ -21,4 +21,4 @@ packages = ["src/plant"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # One environment holds both worlds here; the plant's tests must not load the tool's plugin.
-addopts = "--strict-markers --import-mode=importlib -p no:busproof"
+addopts = "--strict-markers --import-mode=importlib -p no:busproof -p no:asyncio"

@@ -13,7 +13,7 @@ START: dict[str, object] = {
     "good_count": 0,
     "reject_count": 0,
     "torque": 0.0,
-    "speed": 60.0,
+    "cap_supply": 100,
     "torque_target": 2.0,
 }
 
@@ -31,9 +31,9 @@ def test_a_command_reaches_the_machine(capper: Capper):
 
 def test_parameters_reach_the_machine(capper: Capper):
     assert capper.unit.settings_topic is not None
-    receive(capper, capper.unit.settings_topic, b'{"speed": 30.0}')
+    receive(capper, capper.unit.settings_topic, b'{"torque_target": 2.2}')
 
-    assert capper.status["speed"] == 30.0
+    assert capper.status["torque_target"] == 2.2
 
 
 @pytest.mark.parametrize("payload", [b"garbage", b'{"order": "Reset"}', b'"Reset"', None])

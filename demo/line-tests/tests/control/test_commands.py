@@ -22,10 +22,19 @@ async def test_hold_brings_a_running_line_to_held(running_line: PackagingLine):
     await expect(running_line.state).to_be(State.HELD, within=10)
 
 
+async def test_unhold_brings_a_held_line_back_to_execute(running_line: PackagingLine):
+    await running_line.hold()
+    await expect(running_line.scu.state).to_be(State.HELD, within=10)
+
+    await running_line.unhold()
+
+    await expect(running_line.state).to_be(State.EXECUTE, within=10)
+
+
 async def test_stop_brings_a_running_line_to_stopped(running_line: PackagingLine):
     await running_line.stop()
 
-    await expect(running_line.state).to_be(State.STOPPED, within=10)
+    await expect(running_line.state).to_be(State.STOPPED, within=15)
 
 
 async def test_abort_stops_every_machine_from_the_scu(running_line: PackagingLine):

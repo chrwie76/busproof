@@ -14,13 +14,16 @@ WITHIN = 10  # seconds a precondition may take
 
 @pytest.fixture
 async def line(bus: Bus, contract: LineContract) -> PackagingLine:
-    """Precondition: the whole line in Stopped, the SCU and every machine."""
+    """Precondition: the whole line in Stopped, full, with its parameters as they should be."""
     line = PackagingLine(bus, contract.topics)
     await line.abort()  # the one command that works from nearly anywhere
     await expect(line.scu.state).to_be(State.ABORTED, within=WITHIN)
     await line.clear()
     await expect(line.scu.state).to_be(State.STOPPED, within=WITHIN)
     await expect(line.state).to_be(State.STOPPED, within=WITHIN)
+    await line.filler.set(speed=60.0, fill_target=98.0, bottle_supply=10000, tank_level=100.0)
+    await line.capper.set(torque_target=2.0, cap_supply=10000)
+    await line.inspector.set(min_fill_level=90.0)
     return line
 
 
@@ -50,4 +53,5 @@ async def stopped_capper(bus: Bus, contract: LineContract) -> Capper:
     await expect(capper.state).to_be(State.ABORTED, within=WITHIN)
     await capper.send("Clear")
     await expect(capper.state).to_be(State.STOPPED, within=WITHIN)
+    await capper.set(torque_target=2.0, cap_supply=10000)
     return capper

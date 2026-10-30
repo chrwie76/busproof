@@ -34,6 +34,9 @@ class PackagingLine(Line):
     async def hold(self) -> None:
         await self.send("Hold")
 
+    async def unhold(self) -> None:
+        await self.send("Unhold")
+
     async def abort(self) -> None:
         await self.send("Abort")
 

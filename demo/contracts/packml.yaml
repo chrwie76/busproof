@@ -20,6 +20,7 @@ roles:
   producing: [Execute]
   faulted: [Aborted]
   clears_counters: [Resetting]
+  drops_units: [Aborting]
 
 states:
   Stopped:

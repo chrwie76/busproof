@@ -164,6 +164,10 @@ def test_busproof_reads_the_demo_line_into_topics():
 # --- the controller ------------------------------------------------------------------------------
 
 
+def test_a_bottle_travels_to_every_machine_after_the_first_in_their_order():
+    assert [leg["to"] for leg in LINE["transport"]] == list(LINE["machines"])[1:]
+
+
 def test_the_controller_starts_and_stops_exactly_the_machines_of_the_line():
     assert sorted(CONTROLLER["start_order"]) == sorted(LINE["machines"])
     assert sorted(CONTROLLER["stop_order"]) == sorted(LINE["machines"])

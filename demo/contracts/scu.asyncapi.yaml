@@ -6,7 +6,8 @@ info:
   description: |
     The central unit of a bottling line: takes commands for the whole line, passes them on to the
     machines in the order line.yaml gives, reports a line state of its own, and reacts when a
-    machine fails or is gone. It follows the PackML state machine in packml.yaml.
+    machine fails or is gone. It plays the transport too: it knows where a bottle is and when it
+    arrives. It follows the PackML state machine in packml.yaml.
 
     Its state is a claim, not the truth about the machines: each machine reports for itself, and
     the two can differ. It counts no product; each station counts its own.
@@ -73,7 +74,7 @@ components:
     status:
       payload:
         type: object
-        required: [state, in_transit, faulted_machine]
+        required: [state, in_transit, lost, faulted_machine]
         properties:
           state:
             type: integer
@@ -82,15 +83,19 @@ components:
           in_transit:
             type: integer
             minimum: 0
-            description: Bottles on the transport between the stations right now.
+            description: Bottles between two stations right now, or waiting for a station's answer.
+          lost:
+            type: integer
+            minimum: 0
+            description: Bottles lost since the last reset, by an abort or a machine that refused them.
           faulted_machine:
             type: [string, "null"]
             description: The machine that made the SCU react, or null.
       examples:
         - name: running
-          payload: {state: 6, in_transit: 12, faulted_machine: null}
+          payload: {state: 6, in_transit: 12, lost: 0, faulted_machine: null}
         - name: held because of the capper
-          payload: {state: 11, in_transit: 3, faulted_machine: capper}
+          payload: {state: 11, in_transit: 3, lost: 0, faulted_machine: capper}
     command:
       payload:
         type: object

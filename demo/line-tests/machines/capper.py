@@ -10,3 +10,5 @@ class Capper(Machine):
         self.good_count = self.signal("good_count")
         self.reject_count = self.signal("reject_count")
         self.torque = self.signal("torque")
+        self.cap_supply = self.signal("cap_supply")
+        self.result = self.signal("result")

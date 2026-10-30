@@ -32,7 +32,11 @@ def machine_contract(name: str) -> dict:
             },
             "in": {
                 "address": f"{{site}}/{{line}}/{name}/do",
-                "messages": {"m": {"payload": {"properties": {"order": {"enum": ["Go", "Halt"]}}}}},
+                "messages": {
+                    "m": {
+                        "payload": {"properties": {"order": {"enum": ["Go", "Halt"]}, "heat": {}}}
+                    }
+                },
             },
         },
         "operations": {
@@ -76,6 +80,31 @@ def test_the_line_keeps_its_name_and_the_order_of_its_machines(line_file):
     assert (line.name, line.machines) == ("line9", ["mixer", "oven"])
 
 
+def test_what_a_machine_receives_without_an_enum_becomes_a_parameter(line_file):
+    line = read_line(line_file)
+
+    assert line.topics("oven", "set heat") == Address("plant9/line9/oven/do", ("heat",))
+
+
+async def test_a_machine_sets_a_parameter_where_the_contract_says(line_file, bus):
+    oven = Machine(bus, read_line(line_file).topics, "oven")
+
+    await oven.set(heat=180)
+
+    assert [(message.topic, message.value) for message in bus.sent] == [
+        ("plant9/line9/oven/do", {"heat": 180})
+    ]
+
+
+async def test_a_parameter_the_contract_does_not_have_fails_and_sends_nothing(line_file, bus):
+    oven = Machine(bus, read_line(line_file).topics, "oven")
+
+    with pytest.raises(ContractError, match="has no 'set colour'"):
+        await oven.set(colour="red")
+
+    assert bus.sent == []
+
+
 def test_a_line_may_name_a_unit_that_coordinates_it(line_file):
     line = yaml.safe_load(line_file.read_text())
     line["controller"] = BOSS
@@ -114,7 +143,7 @@ def test_a_name_the_contract_does_not_have_fails_and_lists_the_ones_it_has(line_
         line.topics("oven", "temprature")
 
     assert str(error.value) == (
-        "the contract of oven has no 'temprature'; it has: Go, Halt, state, temperature"
+        "the contract of oven has no 'temprature'; it has: Go, Halt, set heat, state, temperature"
     )
 
 

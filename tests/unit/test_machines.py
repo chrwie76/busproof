@@ -71,6 +71,17 @@ async def test_a_command_without_a_path_is_sent_as_its_bare_name(bus):
     assert [(message.topic, message.value) for message in bus.sent] == [(f"{CAPPER}/Stop", "Stop")]
 
 
+async def test_parameters_for_one_topic_travel_in_one_message(bus):
+    def parameters(machine: str, name: str) -> Address:
+        return Address(f"{LINE}/{machine}/set", (name.removeprefix("set "),))
+
+    await Machine(bus, parameters, "capper").set(speed=60, torque=2.0)
+
+    assert [(message.topic, message.value) for message in bus.sent] == [
+        (f"{CAPPER}/set", {"speed": 60, "torque": 2.0})
+    ]
+
+
 async def test_a_machine_signal_is_read_from_the_machines_message(bus):
     capper = Capper(bus, topics)
     bus.deliver(CAPPER, {"state": "Execute", "good_count": 3})

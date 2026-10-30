@@ -12,8 +12,8 @@ repository: it depends on `busproof` like any other package and uses only its pu
 | `machines/` | Machine objects: `filler.py`, `capper.py`, `inspector.py`, `scu.py`, `line.py`; `state.py` says what the numbers mean | page objects |
 | `tests/fat/` | Factory acceptance: one machine alone, without the line | |
 | `tests/control/` | States, commands, refused commands; what the SCU does and what it claims | `tests/<app>/ui` … |
-| `tests/product/` | What the line makes: good units, rejects | |
-| `tests/timing/` | Reports that keep coming; later latencies, dwell times, ordering | |
+| `tests/product/` | What the line makes: good bottles, rejects, a fault that shows only at the end, the balance | |
+| `tests/timing/` | Reports that keep coming, how long a bottle travels, a belt that stands still in a hold | |
 
 The three test folders are the three things to check from docs/IDEAS.md §4: control, product,
 timing — a control suite alone can run green on a line that makes nothing.

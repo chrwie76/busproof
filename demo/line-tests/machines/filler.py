@@ -10,3 +10,4 @@ class Filler(Machine):
         self.filled_count = self.signal("filled_count")
         self.fill_level = self.signal("fill_level")
         self.tank_level = self.signal("tank_level")
+        self.bottle_supply = self.signal("bottle_supply")

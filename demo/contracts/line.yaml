@@ -19,6 +19,12 @@ machines:
   capper: {contract: machines/capper.asyncapi.yaml, states: packml.yaml}
   inspector: {contract: machines/inspector.asyncapi.yaml, states: packml.yaml}
 
+# How long a bottle travels to each station. It starts at the first machine; the last one's verdict
+# is its end. The belt runs in Execute and while the line runs empty, and stands still otherwise.
+transport:
+  - {to: capper, seconds: 3}
+  - {to: inspector, seconds: 2}
+
 # The unit that coordinates the machines. Machines also take commands directly, so one can be
 # tested without it. What it should do is written here, so a test can check that it does.
 controller:
