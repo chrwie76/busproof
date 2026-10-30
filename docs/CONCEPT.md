@@ -423,9 +423,9 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–26):
     counts; so a second plant is a section, not a change to a test. The fixtures every project
     needs — `settings`, `contract`, `bus` — come with BusProof as a pytest plugin, as `page`
     comes with pytest-playwright; what belongs to one plant — `line`, `running_line` — is in the
-    project's `conftest.py`. Until the plant exists (M2), a **stand-in** in the test project
-    plays the machines over the fake bus from the same contracts (`make line-tests`). It proves
-    the wiring and that the tests can turn red; it proves nothing about a plant.
+    project's `conftest.py`. A stand-in plant over the fake bus carried the tests through M1 and
+    went once the plant ran in Docker: playing an SCU too, it would have become a second plant.
+    So `make check` stays offline, and `make line-tests` needs Docker, also in CI.
 26. **An SCU coordinates the line, and all of it speaks MQTT for now.** The SCU is the central
     unit of the demo plant, with a contract of its own. It takes line commands and passes them
     on in the order `line.yaml` gives (start from the end of the line, stop from its beginning),

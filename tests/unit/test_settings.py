@@ -11,12 +11,10 @@ TOML = """
 [env.local]
 line = "contracts/line.yaml"
 
-[env.offline]
-line = "contracts/line.yaml"
-bus = "fake"
+[env.plant2]
+line = "other/line.yaml"
 
 [env.broken]
-bus = "fake"
 """
 
 
@@ -29,16 +27,13 @@ def project(tmp_path: Path) -> Path:
 def test_without_busproof_env_the_local_section_counts(project, monkeypatch):
     monkeypatch.delenv("BUSPROOF_ENV", raising=False)
 
-    settings = read_settings(project)
-
-    assert settings.env == "local"
-    assert settings.bus == "mqtt"
+    assert read_settings(project).env == "local"
 
 
 def test_busproof_env_picks_the_section(project, monkeypatch):
-    monkeypatch.setenv("BUSPROOF_ENV", "offline")
+    monkeypatch.setenv("BUSPROOF_ENV", "plant2")
 
-    assert read_settings(project).bus == "fake"
+    assert read_settings(project).line == project / "other" / "line.yaml"
 
 
 def test_the_line_file_is_relative_to_busproof_toml(project, monkeypatch):
@@ -56,9 +51,9 @@ def test_the_file_is_found_in_a_folder_above(project, monkeypatch):
 
 
 def test_an_unknown_environment_lists_the_ones_there_are(project, monkeypatch):
-    monkeypatch.setenv("BUSPROOF_ENV", "plant2")
+    monkeypatch.setenv("BUSPROOF_ENV", "plant3")
 
-    with pytest.raises(SettingsError, match="no environment 'plant2'; it has: broken, local, off"):
+    with pytest.raises(SettingsError, match="no environment 'plant3'; it has: broken, local, pla"):
         read_settings(project)
 
 

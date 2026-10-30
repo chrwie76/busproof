@@ -31,6 +31,8 @@ class LineContract:
     name: str
     # The machines, in the order the line lists them.
     machines: list[str]
+    # The unit that coordinates them, if the line has one. It has an address, but is no member.
+    controller: str | None
     # (machine, signal or command) -> where it is
     addresses: dict[tuple[str, str], Address]
 
@@ -41,9 +43,10 @@ class LineContract:
 
     def topics(self, machine: str, name: str) -> Address:
         """Where `name` of `machine` is — a `Topics` function, to hand to a `Machine`."""
-        if machine not in self.machines:
+        units = [*self.machines, *([self.controller] if self.controller else [])]
+        if machine not in units:
             raise ContractError(
-                f"line {self.name} has no machine {machine!r}; it has: {', '.join(self.machines)}"
+                f"line {self.name} has no machine {machine!r}; it has: {', '.join(units)}"
             )
         if (machine, name) not in self.addresses:
             known = sorted(known for owner, known in self.addresses if owner == machine)
@@ -58,10 +61,13 @@ def read_line(path: str | Path) -> LineContract:
     path = Path(path)
     line = _load(path)
     addresses: dict[tuple[str, str], Address] = {}
-    for machine, entry in line["machines"].items():
+    controller = line.get("controller")
+    units = dict(line["machines"]) | ({controller["name"]: controller} if controller else {})
+    for unit, entry in units.items():
         found = _read_machine(path.parent / entry["contract"], line["address"])
-        addresses.update({(machine, name): address for name, address in found.items()})
-    return LineContract(line["name"], list(line["machines"]), addresses)
+        addresses.update({(unit, name): address for name, address in found.items()})
+    name = controller["name"] if controller else None
+    return LineContract(line["name"], list(line["machines"]), name, addresses)
 
 
 def _read_machine(path: Path, where: dict[str, str]) -> dict[str, Address]:

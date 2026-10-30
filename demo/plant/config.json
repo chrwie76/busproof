@@ -2,13 +2,31 @@
   "tick_seconds": 0.1,
   "report_seconds": 0.5,
   "acting_seconds": 0.5,
-  "machines": {
+  "silence_seconds": 3.0,
+  "units": {
+    "filler": {
+      "filled_count": 0,
+      "fill_level": 0.0,
+      "tank_level": 80.0,
+      "speed": 60.0,
+      "fill_target": 98.0
+    },
     "capper": {
       "good_count": 0,
       "reject_count": 0,
       "torque": 0.0,
       "speed": 60.0,
       "torque_target": 2.0
+    },
+    "inspector": {
+      "pass_count": 0,
+      "reject_count": 0,
+      "last_fill_level": 0.0,
+      "min_fill_level": 90.0
+    },
+    "scu": {
+      "in_transit": 0,
+      "faulted_machine": null
     }
   }
 }

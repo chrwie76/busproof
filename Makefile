@@ -28,15 +28,21 @@ test:  ## Run the tests
 plant-tests:  ## Run the demo plant's own tests: does the simulation compute right?
 	cd demo/plant && uv run pytest
 
-line-tests:  ## Run the demo's test project, offline against its stand-in plant
-	cd demo/line-tests && BUSPROOF_ENV=offline uv run pytest
-
-fat:  ## Test the capper alone, on a real broker in Docker
-	docker compose -f demo/compose.yaml up -d --build mosquitto capper
-	(cd demo/line-tests && BUSPROOF_ENV=local BUSPROOF_MQTT_URL=mqtt://localhost:$${BUSPROOF_MQTT_PORT:-1884} uv run pytest tests/fat); \
+# Starts the plant in Docker, runs tests against it on a real broker, and always cleans up.
+# 1: the units to start, 2: the pytest arguments.
+define against_the_plant
+	docker compose -f demo/compose.yaml up -d --build --wait $(1)
+	(cd demo/line-tests && BUSPROOF_ENV=local BUSPROOF_MQTT_URL=mqtt://localhost:$${BUSPROOF_MQTT_PORT:-1884} uv run pytest $(2)); \
 	code=$$?; docker compose -f demo/compose.yaml down; exit $$code
+endef
 
-check: lint typecheck test plant-tests line-tests  ## Everything CI runs
+line-tests:  ## Test the whole line: the plant in Docker, on a real broker
+	$(call against_the_plant,,--ignore=tests/fat -m "not needs_transport")
+
+fat:  ## Test the capper alone, without the line and without the SCU
+	$(call against_the_plant,mosquitto capper,tests/fat)
+
+check: lint typecheck test plant-tests  ## Everything that runs offline; CI also runs fat and line-tests
 
 clean:  ## Remove caches and build output
 	rm -rf .pytest_cache .ruff_cache dist build

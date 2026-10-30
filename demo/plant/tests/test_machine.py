@@ -1,5 +1,6 @@
 """The simulation computes right: it follows the state machine, counts, and keeps its contract."""
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,8 @@ from jsonschema import Draft7Validator
 
 from plant.capper import Capper
 from plant.contracts import Unit, read_unit
+from plant.filler import Filler
+from plant.machine import Machine
 
 CONTRACTS = Path(__file__).parents[2] / "contracts"
 START: dict[str, object] = {
@@ -136,3 +139,36 @@ def test_every_report_keeps_the_contract_in_every_state(capper: Capper, unit: Un
         capper.state = name
         report: Any = capper.report()
         assert not list(schema.iter_errors(report)), name
+
+
+@pytest.mark.parametrize("name", ["filler", "capper", "inspector"])
+def test_the_config_gives_every_machine_a_start_that_keeps_its_contract(name: str):
+    config = json.loads((Path(__file__).parents[1] / "config.json").read_text())
+    unit = read_unit(CONTRACTS, name)
+    contract = yaml.safe_load((CONTRACTS / "machines" / f"{name}.asyncapi.yaml").read_text())
+    schema = Draft7Validator(contract["components"]["messages"]["status"]["payload"])
+
+    report: Any = Machine(unit, config["units"][name], ACTING).report()
+
+    assert not list(schema.iter_errors(report))
+
+
+def test_the_filler_fills_to_the_level_set_and_its_tank_runs_down():
+    start = {
+        "filled_count": 0,
+        "fill_level": 0.0,
+        "tank_level": 80.0,
+        "speed": 60.0,
+        "fill_target": 95.0,
+    }
+    filler = Filler(read_unit(CONTRACTS, "filler"), start, ACTING)
+    filler.take("Reset")
+    filler.tick(ACTING)
+    filler.take("Start")
+    filler.tick(ACTING)
+
+    filler.tick(10)
+
+    assert filler.status["filled_count"] == 10
+    assert filler.status["fill_level"] == 95.0
+    assert filler.status["tank_level"] == pytest.approx(79.9)

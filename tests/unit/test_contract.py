@@ -16,6 +16,7 @@ LINE = {
         "oven": {"contract": "machines/oven.asyncapi.yaml"},
     },
 }
+BOSS = {"name": "boss", "contract": "machines/boss.asyncapi.yaml"}
 
 
 def machine_contract(name: str) -> dict:
@@ -49,7 +50,7 @@ def machine_contract(name: str) -> dict:
 @pytest.fixture
 def line_file(tmp_path: Path) -> Path:
     (tmp_path / "machines").mkdir()
-    for name in LINE["machines"]:
+    for name in [*LINE["machines"], BOSS["name"]]:
         contract = tmp_path / "machines" / f"{name}.asyncapi.yaml"
         contract.write_text(yaml.safe_dump(machine_contract(name)))
     path = tmp_path / "line.yaml"
@@ -73,6 +74,22 @@ def test_the_line_keeps_its_name_and_the_order_of_its_machines(line_file):
     line = read_line(line_file)
 
     assert (line.name, line.machines) == ("line9", ["mixer", "oven"])
+
+
+def test_a_line_may_name_a_unit_that_coordinates_it(line_file):
+    line = yaml.safe_load(line_file.read_text())
+    line["controller"] = BOSS
+    line_file.write_text(yaml.safe_dump(line))
+
+    contract = read_line(line_file)
+
+    assert contract.controller == "boss"
+    assert contract.machines == ["mixer", "oven"], "the coordinator is no member of the line"
+    assert contract.topics("boss", "Go") == Address("plant9/line9/boss/do", ("order",))
+
+
+def test_a_line_without_one_has_none(line_file):
+    assert read_line(line_file).controller is None
 
 
 def test_a_bus_listens_to_everything_under_the_line(line_file):

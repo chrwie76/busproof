@@ -22,4 +22,4 @@ would have: a system, the agreement on how it talks, and a test project for it.
 Because of these rules, each part could move to a repository of its own unchanged: the plant as a
 Docker image with its contracts, the test project as a template others start from.
 
-Status: `contracts/` and `line-tests/` are filled; `plant/` and `compose.yaml` have the capper so far (M2).
+Status: `contracts/` and `line-tests/` are filled; `plant/` and `compose.yaml` have all units, without bottles that travel yet (M2).

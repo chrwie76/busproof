@@ -30,6 +30,7 @@ def test_a_command_reaches_the_machine(capper: Capper):
 
 
 def test_parameters_reach_the_machine(capper: Capper):
+    assert capper.unit.settings_topic is not None
     receive(capper, capper.unit.settings_topic, b'{"speed": 30.0}')
 
     assert capper.status["speed"] == 30.0

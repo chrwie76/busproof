@@ -25,8 +25,6 @@ class Settings:
     env: str
     # The line file, resolved against the folder of busproof.toml.
     line: Path
-    # "mqtt", or "fake" for a bus without a broker.
-    bus: str = "mqtt"
 
 
 def read_settings(start: Path) -> Settings:
@@ -40,7 +38,7 @@ def read_settings(start: Path) -> Settings:
     section = environments[env]
     if "line" not in section:
         raise SettingsError(f"{path}: [env.{env}] does not say which line file to read")
-    return Settings(env, path.parent / section["line"], section.get("bus", "mqtt"))
+    return Settings(env, path.parent / section["line"])
 
 
 def broker_url() -> str:

@@ -1,7 +1,6 @@
 """Factory acceptance: the capper alone, with no line and no SCU — as at its maker's.
 
-The same tests run offline against the stand-in (`make line-tests`) and against the real machine
-on a real broker (`make fat`).
+Run with `make fat`: only the broker and this one machine are started.
 """
 
 from busproof import Bus, expect

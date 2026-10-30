@@ -16,20 +16,31 @@ class Unit:
     roles: dict[str, list[str]]
     status_topic: str
     command_topic: str
-    settings_topic: str
     online_topic: str
-    # The parameters it takes, with their limits, from its contract.
+    # The parameters it takes, with their limits, from its contract. The SCU takes none.
+    settings_topic: str | None
     settings: dict[str, dict]
 
 
+@dataclass(frozen=True)
+class Plan:
+    """What the SCU needs to know of the line: its machines, and what it should do with them."""
+
+    machines: dict[str, Unit]
+    start_order: list[str]
+    stop_order: list[str]
+    on_machine_fault: str
+
+
 def read_unit(contracts: Path, name: str) -> Unit:
-    """Read one machine from `contracts`. There is no fallback copy: a missing file is an error."""
+    """Read one unit from `contracts`. There is no fallback copy: a missing file is an error."""
     line = _load(contracts / "line.yaml")
-    entry = line["machines"][name]
+    controller = line["controller"]
+    entry = controller if name == controller["name"] else line["machines"][name]
     contract = _load(contracts / entry["contract"])
     behaviour = _load(contracts / entry["states"])
     channels = contract["channels"]
-    settings = contract["components"]["messages"]["settings"]["payload"]["properties"]
+    messages = contract["components"]["messages"]
 
     def topic(channel: str) -> str:
         return channels[channel]["address"].format(**line["address"])
@@ -41,9 +52,20 @@ def read_unit(contracts: Path, name: str) -> Unit:
         roles=behaviour["roles"],
         status_topic=topic("status"),
         command_topic=topic("command"),
-        settings_topic=topic("settings"),
         online_topic=topic("online"),
-        settings=settings,
+        settings_topic=topic("settings") if "settings" in channels else None,
+        settings=messages["settings"]["payload"]["properties"] if "settings" in messages else {},
+    )
+
+
+def read_plan(contracts: Path) -> Plan:
+    line = _load(contracts / "line.yaml")
+    controller = line["controller"]
+    return Plan(
+        machines={name: read_unit(contracts, name) for name in line["machines"]},
+        start_order=controller["start_order"],
+        stop_order=controller["stop_order"],
+        on_machine_fault=controller["on_machine_fault"],
     )
 
 

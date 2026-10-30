@@ -7,7 +7,8 @@ Python itself — the system Python does not matter.
 
 ```bash
 make install   # .venv + dependencies + Git hooks
-make check     # lint, types, tests — exactly what CI runs
+make check     # lint, types, tests, all offline — as CI runs them
+make line-tests  # the demo plant in Docker, its tests on a real broker; CI runs this too
 make           # list all commands
 ```
 

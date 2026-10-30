@@ -17,7 +17,6 @@ import pytest
 
 from busproof.bus import Bus
 from busproof.contract import LineContract, read_line
-from busproof.fake import FakeBus
 from busproof.settings import Settings, broker_url, read_settings
 
 
@@ -33,10 +32,7 @@ def contract(settings: Settings) -> LineContract:
 
 @pytest.fixture
 async def bus(settings: Settings, contract: LineContract) -> AsyncIterator[Bus]:
-    if settings.bus == "fake":
-        yield FakeBus()
-        return
-    # Imported only here, so a project without the mqtt extra can still use the fake bus.
+    # Imported only here: the core works without the mqtt extra, and so does collecting tests.
     from busproof.mqtt import MqttBus
 
     async with MqttBus(broker_url(), listen=contract.listen) as connected:

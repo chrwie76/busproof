@@ -6,8 +6,3 @@ line = "../contracts/line.yaml"
 
 [env.ci]
 line = "../contracts/line.yaml"
-
-# No broker and no plant: a stand-in answers over a fake bus (stand_in.py). `make line-tests`.
-[env.offline]
-line = "../contracts/line.yaml"
-bus = "fake"
