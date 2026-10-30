@@ -1,0 +1,38 @@
+# Publishes a version when a tag like v0.2.0 is pushed: first to TestPyPI, then to PyPI.
+# No password anywhere: both trust this workflow by Trusted Publishing, set up once on their sites.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  testpypi:
+    runs-on: ubuntu-24.04
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # the version is read from the tag
+      - uses: astral-sh/setup-uv@v10.3.2
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  pypi:
+    needs: testpypi
+    runs-on: ubuntu-24.04
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10.3.2
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@v1.14.2

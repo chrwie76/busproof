@@ -8,10 +8,23 @@ readme = "README.md"
 license = "Apache-2.0"
 authors = [{ name = "Christoph Wielgus" }]
 requires-python = ">=3.12"
+keywords = ["testing", "mqtt", "asyncapi", "iiot", "packml", "pytest"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Manufacturing",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+]
 dependencies = [
     "pyyaml>=6.0",
 ]
 dynamic = ["version"]
+
+[project.urls]
+Repository = "https://github.com/chrwie76/busproof"
 
 [project.entry-points.pytest11]
 # Gives every project with BusProof installed the fixtures `settings`, `contract` and `bus`.
@@ -42,6 +55,10 @@ build-backend = "hatchling.build"
 # Several projects in one repository, sharing one .venv and one uv.lock (like npm workspaces).
 # The repository root is the tool; demo/ holds a customer's world. The plant joins in M2.
 members = ["demo/line-tests", "demo/plant"]
+
+[tool.hatch.build.targets.sdist]
+# Only the library. The demo and its tests belong to the repository, not to the package.
+include = ["src", "LICENSE", "README.md"]
 
 [tool.hatch.version]
 # The version comes from the Git tag (v0.1.0); commits after it get a .devN suffix.
