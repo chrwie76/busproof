@@ -23,6 +23,7 @@ class Bottle:
 
 class Scu(Machine):
     counters = ("lost",)
+    faults = Machine.faults | {"false_claim", "lose_bottles"}
 
     def __init__(
         self,
@@ -41,6 +42,7 @@ class Scu(Machine):
         self._belt: list[Bottle] = []
         self._at_station: dict[str, str] = {}  # bottle -> the station whose answer is awaited
         self._still_to_stop: list[str] = []
+        self._seen_from_source = 0
 
     def listens_to(self) -> list[str]:
         topics = super().listens_to()
@@ -128,6 +130,8 @@ class Scu(Machine):
         """Finished when every machine it can still count on has got there, and at least one has:
         with no machine left, a claim like "the line is in Execute" would be about nothing. A
         machine merely silent still counts: what it last said does not show it got there."""
+        if self.fault == "false_claim":
+            return True
         counted = [
             self.machine_states.get(name)
             for name in self.plan.machines
@@ -142,6 +146,10 @@ class Scu(Machine):
         names = list(self.plan.machines)
         if station != names[0] and self._at_station.pop(unit, None) is None:
             return  # no longer expected: it was given up for lost
+        if station == names[0]:
+            self._seen_from_source += 1
+            if self.fault == "lose_bottles" and self._seen_from_source % 2:
+                return  # gone without a word: only a balance can find this
         if result == "refused":
             self._add("lost", 1)
         following = names[names.index(station) + 1 :]

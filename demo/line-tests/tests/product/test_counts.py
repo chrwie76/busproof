@@ -2,16 +2,9 @@
 
 import asyncio
 
-from busproof import Signal, expect
+from busproof import expect
+from checks import accounted_for, value_of
 from machines import PackagingLine, State
-
-
-def value_of(signal: Signal) -> int:
-    """The last value a signal reported, for a sum over a line that has come to rest."""
-    latest = signal.latest()
-    assert latest is not None, f"{signal.name} never reported"
-    assert isinstance(latest.value, int)
-    return latest.value
 
 
 async def test_a_running_line_makes_good_bottles_and_no_rejects(running_line: PackagingLine):
@@ -61,15 +54,7 @@ async def test_every_bottle_is_accounted_for_when_the_line_has_run_empty(
     await expect(running_line.state).to_be(State.STOPPED, within=15)
     await expect(running_line.scu.state).to_be(State.STOPPED, within=15)
 
-    filled = value_of(running_line.filler.filled_count)
-    accounted = (
-        value_of(running_line.capper.reject_count)
-        + value_of(running_line.inspector.pass_count)
-        + value_of(running_line.inspector.reject_count)
-        + value_of(running_line.scu.in_transit)
-        + value_of(running_line.scu.lost)
-    )
-    assert filled == accounted
+    assert value_of(running_line.filler.filled_count) == accounted_for(running_line)
     assert value_of(running_line.scu.in_transit) == 0
     assert value_of(running_line.scu.lost) == 0
 

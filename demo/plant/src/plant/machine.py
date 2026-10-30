@@ -14,6 +14,9 @@ logger = logging.getLogger("plant")
 class Machine:
     # Counters start again from zero when the machine resets.
     counters: tuple[str, ...] = ()
+    # What the test handle can switch on (FAULTS.md). No contract knows of this: a real machine
+    # has no such topic.
+    faults = frozenset({"stuck_counter", "skip_acting", "silent", "reorder_reports"})
 
     def __init__(self, unit: Unit, start: dict[str, object], acting_seconds: float):
         self.unit = unit
@@ -23,11 +26,18 @@ class Machine:
         self._in_state_for = 0.0
         self._bottles_due = 0.0  # a bottle takes longer than a step: the fraction waits here
         self._outbox: list[tuple[str, dict]] = []
+        self.fault: str | None = None
+        self._frozen: dict[str, object] = {}
+        self._held_back: dict[str, object] | None = None
 
     def listens_to(self) -> list[str]:
         """The topics this unit acts on."""
         optional = [self.unit.settings_topic, self.unit.unit_topic]
-        return [self.unit.command_topic, *[topic for topic in optional if topic]]
+        return [self.unit.command_topic, self.fault_topic, *[topic for topic in optional if topic]]
+
+    @property
+    def fault_topic(self) -> str:
+        return f"{self.unit.status_topic}/fault"
 
     def hear(self, topic: str, values: dict) -> None:
         """Act on one message from the bus. Raises on one that makes no sense."""
@@ -38,6 +48,8 @@ class Machine:
             logger.info("parameters taken: %s", self.change(values))
         elif topic == self.unit.unit_topic:
             self._arrived(values)
+        elif topic == self.fault_topic:
+            self._switch_fault(values["fault"])
 
     def outgoing(self) -> list[tuple[str, dict]]:
         """Messages to send now, for other units."""
@@ -50,6 +62,9 @@ class Machine:
         if target is None:
             return False
         self._enter(target)
+        done = self.unit.states[self.state].get("done")
+        if self.fault == "skip_acting" and done is not None:
+            self._enter(done)
         return True
 
     def change(self, values: dict[str, object]) -> list[str]:
@@ -82,7 +97,32 @@ class Machine:
 
     def report(self) -> dict[str, object]:
         """The whole state, as the contract says it goes on the wire."""
-        return {"state": self.unit.states[self.state]["number"], **self.status}
+        number = self.unit.states[self.state]["number"]
+        return {"state": number, **self.status, **self._frozen}
+
+    def to_publish(self, report: dict[str, object]) -> list[dict[str, object]]:
+        """What really goes out of a report: normally just that, unless a fault is on."""
+        if self.fault == "silent":
+            return []
+        if self.fault == "reorder_reports":
+            # Swapped only once they differ: two equal reports swapped would show nothing.
+            if self._held_back is None:
+                self._held_back = report
+                return []
+            if report == self._held_back:
+                return []
+            held, self._held_back = self._held_back, None
+            return [report, held]
+        return [report]
+
+    def _switch_fault(self, name: str | None) -> None:
+        if name is not None and name not in self.faults:
+            raise ValueError(f"no fault {name!r}; there are: {', '.join(sorted(self.faults))}")
+        self.fault = name
+        self._held_back = None
+        frozen = name == "stuck_counter"
+        self._frozen = {name: self.status[name] for name in self.counters} if frozen else {}
+        logger.warning("fault switched: %s", name)
 
     def _arrived(self, values: dict) -> None:
         unit, level = values["unit"], values["bottle_fill_level"]

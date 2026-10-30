@@ -3,6 +3,7 @@
 import asyncio
 
 from busproof import Bus, LineContract, expect
+from checks import first_report_of
 from machines import PackagingLine, State
 
 
@@ -16,16 +17,6 @@ def command_order(bus: Bus, contract: LineContract, command: str) -> list[str]:
         and message.topic in topics
         and message.value == {"command": command}
     ]
-
-
-def first_report_of(bus: Bus, contract: LineContract, unit: str, state: State) -> int:
-    """Where in the recording `unit` first reported `state`."""
-    topic = contract.topics(unit, "state").topic
-    for index, message in enumerate(bus.recorder.messages()):
-        value = message.value
-        if message.topic == topic and isinstance(value, dict) and value.get("state") == state:
-            return index
-    raise AssertionError(f"{unit} never reported {state.name}")
 
 
 async def test_the_line_starts_from_its_end(

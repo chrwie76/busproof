@@ -4,8 +4,10 @@ from busproof import Bus, LineContract, Message, expect
 from machines import PackagingLine, State
 
 TRANSPORT_SECONDS = 3 + 2  # filler -> capper -> inspector, as in line.yaml
-# The steps of the plant and the way over the broker: never faster, a little later.
-TOLERANCE_SECONDS = 1.0
+# The plant moves in steps of 0.1 s, so each of the two legs can end a step early; the way over the
+# broker and a busy computer only make it later.
+EARLIEST = TRANSPORT_SECONDS - 2 * 0.1
+LATEST = TRANSPORT_SECONDS + 1.5
 
 
 def verdicts(bus: Bus, contract: LineContract, machine: str) -> list[Message]:
@@ -26,7 +28,8 @@ async def test_a_bottle_takes_as_long_as_the_line_says(
         for message in verdicts(bus, contract, "inspector")
         if isinstance(message.value, dict) and message.value["unit"] == left.value["unit"]
     )
-    assert TRANSPORT_SECONDS <= judged.at - left.at <= TRANSPORT_SECONDS + TOLERANCE_SECONDS
+    took = judged.at - left.at
+    assert EARLIEST <= took <= LATEST, f"the bottle took {took:.2f} s"
 
 
 async def test_nothing_moves_while_the_line_holds_and_it_goes_on_after(

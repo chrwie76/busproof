@@ -248,7 +248,7 @@ release with a short changelog entry. Later candidates: an OPC UA adapter, shown
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–27):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -452,6 +452,14 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–27):
     status and refilled over `…/set`. An empty supply makes the machine hold, as PackML means
     `Hold`: a reason inside the machine (`Suspend` would be one from outside). The SCU notices
     and holds the line; after a refill, `Unhold` brings it back.
+28. **Two handles for a test: faults while it runs, scenarios for how it starts.** A fault that no
+    parameter can cause is switched by a message to `…/<unit>/fault`, in the running plant. No
+    contract knows that topic, as a real machine has no such handle (`demo/plant/FAULTS.md`). A
+    scenario is a small file naming what differs from `config.json`; a test asks for one with
+    `@pytest.mark.scenario("low_caps")`, and the units restart while the broker and the test's
+    recording stay. `tests/faults/` switches each fault on and requires the check meant for it to
+    find it, and a clean run not to: the seed of catch power (M7). A unit says it is online only
+    once it listens, so no first command gets lost after a restart.
 
 To settle later:
 

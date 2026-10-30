@@ -24,9 +24,10 @@ async def serve(machine: Machine, url: str, tick_seconds: float, report_seconds:
             async with aiomqtt.Client(
                 parts.hostname or "localhost", parts.port or 1883, will=will
             ) as client:
-                await client.publish(unit.online_topic, json.dumps({"online": True}), 1, True)
+                # In this order: whoever sees it online can be sure that it listens.
                 for topic in machine.listens_to():
                     await client.subscribe(topic, qos=1)
+                await client.publish(unit.online_topic, json.dumps({"online": True}), 1, True)
                 logger.info("%s on %s, reporting to %s", unit.name, url, unit.status_topic)
                 async with asyncio.TaskGroup() as tasks:
                     tasks.create_task(_listen(machine, client))
@@ -47,7 +48,7 @@ def receive(machine: Machine, topic: str, payload: object) -> None:
         if not isinstance(payload, str | bytes | bytearray):
             raise ValueError("no payload")
         machine.hear(topic, json.loads(payload))
-    except (TypeError, ValueError, KeyError) as error:
+    except (TypeError, ValueError, KeyError, AttributeError) as error:
         logger.warning("ignored a message on %s: %r", topic, error)
 
 
@@ -64,6 +65,7 @@ async def _run(
         report = machine.report()
         since_report += tick_seconds
         if report != last or since_report >= report_seconds:
-            await client.publish(machine.unit.status_topic, json.dumps(report), qos=0)
+            for message in machine.to_publish(report):
+                await client.publish(machine.unit.status_topic, json.dumps(message), qos=0)
             last, since_report = report, 0.0
         await asyncio.sleep(tick_seconds)

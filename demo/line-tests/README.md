@@ -14,6 +14,9 @@ repository: it depends on `busproof` like any other package and uses only its pu
 | `tests/control/` | States, commands, refused commands; what the SCU does and what it claims | `tests/<app>/ui` … |
 | `tests/product/` | What the line makes: good bottles, rejects, a fault that shows only at the end, the balance | |
 | `tests/timing/` | Reports that keep coming, how long a bottle travels, a belt that stands still in a hold | |
+| `tests/scenarios/` | The plant started from other settings, with `@pytest.mark.scenario(...)` | |
+| `tests/faults/` | Each fault of the simulation switched on: the check meant for it has to find it | |
+| `checks.py` | Checks over a whole recording: the balance, the state machine, a counter going down | |
 
 The three test folders are the three things to check from docs/IDEAS.md §4: control, product,
 timing — a control suite alone can run green on a line that makes nothing.
@@ -25,7 +28,8 @@ make line-tests                                  # the whole line, in Docker, on
 make fat                                         # tests/fat: the capper alone
 ```
 
-Both start the plant, run the tests and clean up. To run against a plant already running:
+Both start the plant, run the tests and clean up; the whole line takes about four minutes, as a
+bottle needs real time to travel. To run against a plant already running:
 
 ```
 cd demo/line-tests && BUSPROOF_MQTT_URL=mqtt://localhost:1884 uv run pytest

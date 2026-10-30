@@ -2,12 +2,12 @@
 
 import argparse
 import asyncio
-import json
 import logging
 import os
 from pathlib import Path
 
 from plant.capper import Capper
+from plant.config import DEFAULT, load_config
 from plant.contracts import read_plan, read_unit
 from plant.filler import Filler
 from plant.inspector import Inspector
@@ -35,9 +35,12 @@ def main() -> None:
 
     contracts = Path(os.environ["PLANT_CONTRACTS"])
     config_file = Path(os.environ["PLANT_CONFIG"])
+    scenario = os.environ.get("PLANT_SCENARIO") or DEFAULT
     # Said at every start: which files this unit really follows.
-    logging.getLogger("plant").info("contracts from %s, config from %s", contracts, config_file)
-    config = json.loads(config_file.read_text())
+    logging.getLogger("plant").info(
+        "contracts from %s, config from %s, scenario %s", contracts, config_file, scenario
+    )
+    config = load_config(config_file, scenario)
 
     unit = build(name, contracts, config)
     url = os.environ["PLANT_MQTT_URL"]

@@ -5,10 +5,13 @@ name: busproof-demo
 x-unit: &unit
   build: ./plant
   image: busproof-demo-plant
+  restart: on-failure
   environment:
     PLANT_MQTT_URL: mqtt://mosquitto:1883
+    PLANT_SCENARIO: ${PLANT_SCENARIO:-default}
   volumes:
     - ./contracts:/contracts:ro
+    - ./plant/scenarios:/app/scenarios:ro
   depends_on:
     mosquitto:
       condition: service_healthy

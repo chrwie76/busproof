@@ -7,6 +7,7 @@ class Scu(Machine):
 
     def __init__(self, bus: Bus, topics: Topics):
         super().__init__(bus, topics, name="scu", states=State)
+        self.online = self.signal("online")
         self.in_transit = self.signal("in_transit")
         self.lost = self.signal("lost")
         self.faulted_machine = self.signal("faulted_machine")
