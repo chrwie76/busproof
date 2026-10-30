@@ -15,6 +15,12 @@
 name: PackML core
 initial: Stopped
 
+# What a state means, so code asks for a role and never names a state.
+roles:
+  producing: [Execute]
+  faulted: [Aborted]
+  clears_counters: [Resetting]
+
 states:
   Stopped:
     number: 2

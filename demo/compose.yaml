@@ -1,0 +1,20 @@
+# The demo plant. The broker's port on this computer can be changed with BUSPROOF_MQTT_PORT.
+name: busproof-demo
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "${BUSPROOF_MQTT_PORT:-1884}:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  capper:
+    build: ./plant
+    command: capper
+    environment:
+      PLANT_MQTT_URL: mqtt://mosquitto:1883
+    volumes:
+      - ./contracts:/contracts:ro
+    depends_on:
+      - mosquitto

@@ -46,6 +46,11 @@ def test_exactly_the_acting_states_finish_on_their_own():
         assert ("done" in state) == name.endswith("ing"), name
 
 
+def test_every_role_names_states_that_exist():
+    for states in PACKML["roles"].values():
+        assert set(states) <= set(STATES)
+
+
 def test_every_state_can_be_reached_from_the_initial_one():
     reached, todo = set(), [PACKML["initial"]]
     while todo:

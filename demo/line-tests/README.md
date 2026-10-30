@@ -10,6 +10,7 @@ repository: it depends on `busproof` like any other package and uses only its pu
 | `busproof.toml` | One section per environment; `BUSPROOF_ENV` picks one | `playwright.config.ts` |
 | `conftest.py` | Fixtures in layers: `bus` (from BusProof) → `line` → `idle_line` → `running_line` | fixtures with `test.extend` |
 | `machines/` | Machine objects: `filler.py`, `capper.py`, `inspector.py`, `line.py`; `state.py` says what the numbers mean | page objects |
+| `tests/fat/` | Factory acceptance: one machine alone, without the line | |
 | `tests/control/` | States, commands, refused commands | `tests/<app>/ui` … |
 | `tests/product/` | What the line makes: good units, rejects | |
 | `tests/timing/` | Reports that keep coming; later latencies, dwell times, ordering | |
@@ -22,6 +23,7 @@ timing — a control suite alone can run green on a line that makes nothing.
 
 ```
 make line-tests                                  # offline, against the stand-in
+make fat                                         # tests/fat on a real broker, in Docker
 cd demo/line-tests && BUSPROOF_ENV=ci uv run pytest   # against a real broker and plant (M2)
 ```
 

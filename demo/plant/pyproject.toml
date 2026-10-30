@@ -1,0 +1,24 @@
+# The system under test: a simulated packaging line. It knows nothing of BusProof.
+
+[project]
+name = "plant"
+version = "0.1.0"
+description = "A small simulated packaging line that speaks MQTT and follows PackML."
+requires-python = ">=3.12"
+# Exact versions, because the image installs from this file.
+dependencies = ["aiomqtt==2.5.1", "pyyaml==6.0.3"]
+
+[dependency-groups]
+dev = ["jsonschema>=4.26.0", "pytest>=9.2.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/plant"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# One environment holds both worlds here; the plant's tests must not load the tool's plugin.
+addopts = "--strict-markers --import-mode=importlib -p no:busproof"

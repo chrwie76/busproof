@@ -5,7 +5,7 @@ would have: a system, the agreement on how it talks, and a test project for it.
 
 | Folder | What it is | In real life |
 | --- | --- | --- |
-| [contracts/](contracts/) | How the plant talks and how it behaves: `asyncapi.yaml`, `line.yaml` | the interface agreement between the plant's maker and its testers |
+| [contracts/](contracts/) | How the plant talks and how it behaves: one AsyncAPI file per unit, `packml.yaml`, `line.yaml` | the interface agreement between the plant's maker and its testers |
 | [plant/](plant/) | The system under test: a simulated packaging line and its web page | the machine builder's product |
 | [line-tests/](line-tests/) | The test project, written with BusProof | the customer's test repository |
 
@@ -22,4 +22,4 @@ would have: a system, the agreement on how it talks, and a test project for it.
 Because of these rules, each part could move to a repository of its own unchanged: the plant as a
 Docker image with its contracts, the test project as a template others start from.
 
-Status: `contracts/` and `line-tests/` are filled (M1); `plant/` and `compose.yaml` come in M2.
+Status: `contracts/` and `line-tests/` are filled; `plant/` and `compose.yaml` have the capper so far (M2).
