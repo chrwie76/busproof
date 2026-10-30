@@ -8,7 +8,7 @@ help:  ## List the commands
 	@grep -E '^[a-z]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-10s %s\n", $$1, $$2}'
 
 install:  ## Create .venv, install everything, set up the Git hooks
-	uv sync --all-packages
+	uv sync --all-packages --all-extras
 	uv run pre-commit install --hook-type pre-commit --hook-type pre-push
 
 lint:  ## Check style and common mistakes

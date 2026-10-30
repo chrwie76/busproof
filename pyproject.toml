@@ -13,6 +13,11 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+mqtt = [
+    "aiomqtt==2.5.1",
+]
+
 [dependency-groups]
 # Tools for working on BusProof itself; never installed for users.
 dev = [

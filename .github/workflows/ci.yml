@@ -20,5 +20,5 @@ jobs:
       - uses: astral-sh/setup-uv@v10.3.0  # this action publishes exact tags only, no moving v10
         with:
           python-version: ${{ matrix.python }}
-      - run: uv sync --locked --all-packages
+      - run: uv sync --locked --all-packages --all-extras
       - run: make check
