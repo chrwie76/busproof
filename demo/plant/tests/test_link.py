@@ -6,7 +6,7 @@ import pytest
 
 from plant.capper import Capper
 from plant.contracts import read_unit
-from plant.link import receive
+from plant.link import connection, receive
 
 CONTRACTS = Path(__file__).parents[2] / "contracts"
 START: dict[str, object] = {
@@ -72,3 +72,25 @@ def test_a_fault_can_be_switched_on_and_off(capper: Capper):
 
     receive(capper, capper.fault_topic, b'{"fault": null}')
     assert capper.fault is None
+
+
+def test_a_user_reads_the_password_from_its_file_and_keeps_it_nowhere_else(tmp_path: Path):
+    password = tmp_path / "password"
+    password.write_text("not-a-real-one\n")
+
+    username, secret, _ = connection(
+        {"PLANT_MQTT_USERNAME": "busproof", "PLANT_MQTT_PASSWORD_FILE": str(password)}
+    )
+
+    assert (username, secret) == ("busproof", "not-a-real-one")
+
+
+def test_with_no_user_it_connects_anonymously_and_needs_no_file():
+    assert connection({"PLANT_MQTT_USERNAME": ""}) == (None, None, None)
+
+
+def test_a_user_whose_password_file_is_missing_does_not_connect_without_it(tmp_path: Path):
+    with pytest.raises(FileNotFoundError):
+        connection(
+            {"PLANT_MQTT_USERNAME": "busproof", "PLANT_MQTT_PASSWORD_FILE": str(tmp_path / "x")}
+        )

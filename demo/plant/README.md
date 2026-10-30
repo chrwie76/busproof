@@ -18,8 +18,8 @@ make demo                                 # the whole plant and its page, to loo
 make demo-down                            # stop it
 ```
 
-The page is at http://localhost:8088. The broker listens on port 1884 of this computer, so the demo
-can run next to another broker on 1883. `BUSPROOF_WEB_PORT`, `BUSPROOF_MQTT_PORT` and
+The page is at http://localhost:8088. The broker listens on port 8884 of this computer, so the demo
+can run next to another broker on 8883. `BUSPROOF_WEB_PORT`, `BUSPROOF_MQTT_PORT` and
 `BUSPROOF_WS_PORT` change the ports.
 
 ## What is here
@@ -44,4 +44,10 @@ A bottle begins at the filler and takes the times in `../contracts/line.yaml` to
 station, which judges and counts it itself. When bottles, liquid or caps run out, the machine holds
 and the SCU holds the line; refill over `…/set`, then `Unhold`.
 
-Still to come in M2: secrets and security profiles.
+## Security
+
+`make demo` uses the `password` profile: TLS, and a password, a small certificate authority and a
+broker certificate generated on the first start into `demo/secrets/` (ignored by Git, closed to AI
+assistants). `make demo SECURITY=open` is for a quick try, with no login and no encryption. `make
+demo-reset` throws the generated credentials away. The web page's WebSocket port is plain and
+published to this computer only, as a browser would not trust the demo's own certificate authority.

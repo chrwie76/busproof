@@ -3,6 +3,10 @@
 import asyncio
 import json
 import logging
+import os
+import ssl
+from collections.abc import Mapping
+from pathlib import Path
 from urllib.parse import urlsplit
 
 import aiomqtt
@@ -21,8 +25,14 @@ async def serve(machine: Machine, url: str, tick_seconds: float, report_seconds:
     will = aiomqtt.Will(unit.online_topic, json.dumps({"online": False}), qos=1, retain=True)
     while True:
         try:
+            username, password, tls = connection(os.environ)
             async with aiomqtt.Client(
-                parts.hostname or "localhost", parts.port or 1883, will=will
+                parts.hostname or "localhost",
+                parts.port or 1883,
+                username=username,
+                password=password,
+                tls_context=tls if parts.scheme == "mqtts" else None,
+                will=will,
             ) as client:
                 # In this order: whoever sees it online can be sure that it listens.
                 for topic in machine.listens_to():
@@ -35,6 +45,20 @@ async def serve(machine: Machine, url: str, tick_seconds: float, report_seconds:
         except* (aiomqtt.MqttError, OSError) as errors:
             logger.warning("no broker at %s (%s); trying again", url, errors.exceptions[0])
             await asyncio.sleep(RETRY_SECONDS)
+
+
+def connection(
+    environment: Mapping[str, str],
+) -> tuple[str | None, str | None, ssl.SSLContext | None]:
+    """User, password and TLS from the environment, read at each connect and held nowhere else.
+    Who connects without a user does so anonymously, and that only works on an open broker."""
+    username = environment.get("PLANT_MQTT_USERNAME") or None
+    password = None
+    if username is not None:
+        password = Path(environment["PLANT_MQTT_PASSWORD_FILE"]).read_text().strip()
+    ca = environment.get("PLANT_MQTT_CA")
+    tls = ssl.create_default_context(cafile=ca) if ca and Path(ca).is_file() else None
+    return username, password, tls
 
 
 async def _listen(machine: Machine, client: aiomqtt.Client) -> None:

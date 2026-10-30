@@ -32,6 +32,8 @@
   .numbers { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
   .numbers b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
   .note { font-size: 13px; color: var(--muted); }
+  #login { display: none; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  #login input { width: 180px; text-align: left; }
 </style>
 </head>
 <body>
@@ -40,6 +42,12 @@
     <h1 id="title">Packaging line</h1>
     <span id="broker" class="muted">connecting…</span>
   </div>
+  <form id="login">
+    <label>User <input id="user" autocomplete="username" value="busproof"></label>
+    <label>Password <input id="password" type="password" autocomplete="current-password"></label>
+    <button>Log in</button>
+    <span class="note">`make demo` says where the demo's generated password is.</span>
+  </form>
   <div class="numbers" id="line"></div>
   <p class="note">Abort is a logical stop and no safety function. A real emergency stop is a
     hard-wired circuit, never a message on a bus.</p>
@@ -195,25 +203,55 @@ async function main() {
 
   const parameters = new URLSearchParams(location.search);
   const url = parameters.get("broker") ?? `ws://${location.hostname}:9001`;
-  const client = mqtt.connect(url);
   const broker = document.getElementById("broker");
-  client.on("connect", () => {
-    broker.textContent = `connected to ${url}`;
-    broker.className = "good";
-    client.subscribe(units.flatMap((unit) => [unit.status, unit.online]), { qos: 1 });
-  });
-  client.on("close", () => { broker.textContent = `no connection to ${url}`; broker.className = "bad"; });
-  client.on("message", (topic, payload) => {
-    let values;
-    try { values = JSON.parse(payload.toString()); } catch { return; }
-    for (const unit of units) {
-      if (topic === unit.status) { unit.report = values; unit.lastSeen = Date.now(); }
-      if (topic === unit.online) { unit.isOnline = values.online; }
-    }
-  });
+  const login = document.getElementById("login");
+  // Commands go through this, so the cards keep working across a new login.
+  const link = { client: null, publish: (...args) => link.client?.publish(...args) };
+
+  const connect = (options) => {
+    link.client?.end(true);
+    const client = mqtt.connect(url, options);
+    link.client = client;
+    client.on("connect", () => {
+      login.style.display = "none";
+      // Without a login, anyone on this network can do what this page does: say so.
+      broker.textContent = options.username
+        ? `connected to ${url} as ${options.username}`
+        : `INSECURE: connected to ${url} with no login`;
+      broker.className = options.username ? "good" : "bad";
+      client.subscribe(units.flatMap((unit) => [unit.status, unit.online]), { qos: 1 });
+    });
+    client.on("error", (error) => {
+      if (!/auth/i.test(error.message)) return;
+      client.end(true);
+      login.style.display = "flex";
+      broker.textContent = options.username ? "wrong user or password" : "please log in";
+      broker.className = options.username ? "bad" : "muted";
+    });
+    client.on("close", () => {
+      if (login.style.display === "flex") return;
+      broker.textContent = `no connection to ${url}`;
+      broker.className = "bad";
+    });
+    client.on("message", (topic, payload) => {
+      let values;
+      try { values = JSON.parse(payload.toString()); } catch { return; }
+      for (const unit of units) {
+        if (topic === unit.status) { unit.report = values; unit.lastSeen = Date.now(); }
+        if (topic === unit.online) { unit.isOnline = values.online; }
+      }
+    });
+  };
+  login.onsubmit = (event) => {
+    event.preventDefault();
+    connect({ username: document.getElementById("user").value,
+              password: document.getElementById("password").value });
+    document.getElementById("password").value = "";
+  };
+  connect({});
 
   document.getElementById("units").append(...units.map(
-    (unit) => buildCard(unit, client, unit === scu ? [...FAULTS, ...SCU_FAULTS] : FAULTS)));
+    (unit) => buildCard(unit, link, unit === scu ? [...FAULTS, ...SCU_FAULTS] : FAULTS)));
   const render = () => {
     const now = Date.now();
     units.forEach((unit) => renderUnit(unit, now));

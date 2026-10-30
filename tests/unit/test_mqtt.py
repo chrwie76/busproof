@@ -3,10 +3,11 @@ says in one line when the broker cannot be reached. All offline: a real broker c
 demo plant (M2)."""
 
 import socket
+import ssl
 
 import pytest
 
-from busproof.mqtt import BrokerUnreachable, MqttBus, broker, credentials, decode
+from busproof.mqtt import BrokerUnreachable, MqttBus, broker, credentials, decode, tls_context
 
 URL = "mqtt://localhost:1883"
 LINE = "acme/plant1/packaging/line1"
@@ -43,13 +44,34 @@ def test_every_message_from_the_broker_lands_in_the_recorder():
 
 
 def test_the_broker_comes_from_an_mqtt_url():
-    assert broker("mqtt://broker.local:1884") == ("broker.local", 1884)
-    assert broker("mqtt://broker.local") == ("broker.local", 1883)
+    assert broker("mqtt://broker.local:1884") == ("broker.local", 1884, False)
+    assert broker("mqtt://broker.local") == ("broker.local", 1883, False)
+
+
+def test_mqtts_means_tls_and_its_own_default_port():
+    assert broker("mqtts://broker.local:8884") == ("broker.local", 8884, True)
+    assert broker("mqtts://broker.local") == ("broker.local", 8883, True)
 
 
 def test_another_scheme_is_refused_with_a_reason():
-    with pytest.raises(ValueError, match="only mqtt://host:port for now"):
-        broker("mqtts://broker.local:8883")
+    with pytest.raises(ValueError, match="expected mqtt://host:port"):
+        broker("http://broker.local")
+
+
+def test_tls_always_checks_the_certificate_of_the_broker(monkeypatch):
+    monkeypatch.delenv("BUSPROOF_MQTT_CA", raising=False)
+
+    context = tls_context()
+
+    assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.check_hostname
+
+
+def test_a_missing_certificate_authority_is_an_error_not_a_weaker_check(monkeypatch, tmp_path):
+    monkeypatch.setenv("BUSPROOF_MQTT_CA", str(tmp_path / "no-such-ca.crt"))
+
+    with pytest.raises(OSError):
+        tls_context()
 
 
 def test_credentials_are_read_from_the_environment(monkeypatch):
@@ -71,7 +93,7 @@ async def test_an_unreachable_broker_is_said_in_one_line():
         port = probe.getsockname()[1]
 
     with pytest.raises(
-        BrokerUnreachable, match=f"cannot reach the MQTT broker at 127.0.0.1:{port}"
+        BrokerUnreachable, match=f"cannot connect to the MQTT broker at 127.0.0.1:{port}"
     ):
         async with MqttBus(f"mqtt://127.0.0.1:{port}", listen=f"{LINE}/#"):
             pass

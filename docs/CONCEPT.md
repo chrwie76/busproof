@@ -312,7 +312,10 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28):
     Chosen with `make demo SECURITY=…`. Order: `open` first with the switch built in, `password`
     as the default in M2, `mtls` after it. Under `mtls` the web page still connects with a
     password, because browsers handle client certificates poorly. The `.env.example` names file
-    *paths* for CA, certificate and key — never their contents.
+    *paths* for CA, certificate and key — never their contents. `open` and `password` are built;
+    `mtls` follows with M3. A browser would not trust the demo's own certificate authority, so
+    the page's WebSocket port stays plain and is published to this computer only; a real
+    installation serves it with a proper certificate.
 18. **Entities and fixtures follow the page-object pattern** — the same shape as a Playwright
     project, translated:
 
