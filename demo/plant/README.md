@@ -14,11 +14,13 @@ alone, or stopped while the others run.
 ```
 make line-tests                           # the whole plant, with its tests
 make fat                                  # the capper alone, with its tests
-docker compose -f demo/compose.yaml up    # the whole plant, to look at
+make demo                                 # the whole plant and its page, to look at and use
+make demo-down                            # stop it
 ```
 
-The broker listens on port 1884 of this computer, so the demo can run next to another broker on
-1883; `BUSPROOF_MQTT_PORT` changes it.
+The page is at http://localhost:8088. The broker listens on port 1884 of this computer, so the demo
+can run next to another broker on 1883. `BUSPROOF_WEB_PORT`, `BUSPROOF_MQTT_PORT` and
+`BUSPROOF_WS_PORT` change the ports.
 
 ## What is here
 
@@ -32,6 +34,7 @@ The broker listens on port 1884 of this computer, so the demo can run next to an
 | `src/plant/link.py` | The one place that touches a bus, so another protocol replaces this file only |
 | `config.json`, `scenarios/` | The state the plant starts in: supplies, parameters, its pace; a scenario names what differs |
 | `FAULTS.md` | The faults a test can switch on while the plant runs |
+| `web/index.html` | The page: one file, no backend. It builds itself from the contracts and speaks MQTT over WebSockets. Stop a machine or change a parameter behind the SCU's back, and watch the line react |
 | `tests/` | The plant's own tests: does the simulation compute right? Tests *of* the plant are in `../line-tests` |
 
 A unit reports its whole state after a command, on every change and as a heartbeat. Its MQTT
@@ -41,4 +44,4 @@ A bottle begins at the filler and takes the times in `../contracts/line.yaml` to
 station, which judges and counts it itself. When bottles, liquid or caps run out, the machine holds
 and the SCU holds the line; refill over `…/set`, then `Unhold`.
 
-Still to come in M2: the web page (`web/index.html`).
+Still to come in M2: secrets and security profiles.

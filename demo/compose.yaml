@@ -1,5 +1,5 @@
-# The demo plant: a broker, three machines and the SCU that coordinates them. One image for all
-# units. The broker's port on this computer can be changed with BUSPROOF_MQTT_PORT.
+# The demo plant: a broker, three machines, the SCU that coordinates them, and a page to watch and
+# use it. One image for all units. The ports on this computer can be changed in the environment.
 name: busproof-demo
 
 x-unit: &unit
@@ -21,6 +21,7 @@ services:
     image: eclipse-mosquitto:2
     ports:
       - "${BUSPROOF_MQTT_PORT:-1884}:1883"
+      - "${BUSPROOF_WS_PORT:-9001}:9001"
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
     healthcheck:
@@ -43,3 +44,13 @@ services:
   scu:
     <<: *unit
     command: scu
+
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "${BUSPROOF_WEB_PORT:-8088}:80"
+    volumes:
+      - ./plant/web:/usr/share/nginx/html:ro
+      - ./contracts:/usr/share/nginx/html/contracts:ro
+    depends_on:
+      - mosquitto

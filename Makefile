@@ -2,10 +2,10 @@
 # Every target runs through uv, so it uses the versions pinned in uv.lock.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lint format typecheck test plant-tests line-tests fat check clean
+.PHONY: help install lint format typecheck test plant-tests line-tests fat demo demo-down check clean
 
 help:  ## List the commands
-	@grep -E '^[a-z]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-10s %s\n", $$1, $$2}'
+	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-12s %s\n", $$1, $$2}'
 
 install:  ## Create .venv, install everything, set up the Git hooks
 	uv sync --all-packages --all-extras
@@ -41,6 +41,13 @@ line-tests:  ## Test the whole line: the plant in Docker, on a real broker
 
 fat:  ## Test the capper alone, without the line and without the SCU
 	$(call against_the_plant,mosquitto capper,tests/fat)
+
+demo:  ## Start the plant and its page, in the background
+	docker compose -f demo/compose.yaml up -d --build --wait
+	@echo "The line is at http://localhost:$${BUSPROOF_WEB_PORT:-8088}"
+
+demo-down:  ## Stop the plant
+	docker compose -f demo/compose.yaml down
 
 check: lint typecheck test plant-tests  ## Everything that runs offline; CI also runs fat and line-tests
 
