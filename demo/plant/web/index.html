@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Packaging line</title>
+<style>
+  :root { --bg: #f5f6f8; --card: #fff; --text: #1c2430; --muted: #66707e; --line: #d9dde3;
+          --good: #1a7f4b; --warn: #a86400; --bad: #b3261e; --accent: #1f5fbf; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14181d; --card: #1e242b; --text: #e6e9ed; --muted: #9aa4b1; --line: #333b45;
+            --good: #4cc38a; --warn: #e0a84a; --bad: #f2776e; --accent: #7fb0f5; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+         font: 15px/1.4 system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0; } h2 { font-size: 16px; margin: 0; }
+  header, .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+                  padding: 12px; margin-bottom: 12px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+  .units { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .state { font-weight: 600; } .muted { color: var(--muted); }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  td { padding: 2px 0; } td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  button, select, input { font: inherit; color: inherit; background: var(--bg);
+                          border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+  button { cursor: pointer; } button:disabled { opacity: .4; cursor: default; }
+  button.abort { border-color: var(--bad); color: var(--bad); margin-left: 16px; }
+  input { width: 90px; text-align: right; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+  .setting { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 4px 0; }
+  .numbers { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
+  .numbers b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .note { font-size: 13px; color: var(--muted); }
+  #login { display: none; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  #login input { width: 180px; text-align: left; }
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <h1 id="title">Packaging line</h1>
+    <span id="broker" class="muted">connecting…</span>
+  </div>
+  <form id="login">
+    <label>User <input id="user" autocomplete="username" value="busproof"></label>
+    <label>Password <input id="password" type="password" autocomplete="current-password"></label>
+    <button>Log in</button>
+    <span class="note">`make demo` says where the demo's generated password is.</span>
+  </form>
+  <div class="numbers" id="line"></div>
+  <div class="buttons" id="line-commands" aria-label="Commands for the whole line"></div>
+  <p class="note">Abort is a logical stop and no safety function. A real emergency stop is a
+    hard-wired circuit, never a message on a bus.</p>
+</header>
+<div class="units" id="units"></div>
+
+<script src="vendor/js-yaml.min.js"></script>
+<script src="vendor/mqtt.min.js"></script>
+<script>
+"use strict";
+// Everything this page knows about the line comes from the contracts, except the faults: those are
+// a test handle of the simulation that no contract knows of (../FAULTS.md).
+const FAULTS = ["stuck_counter", "skip_acting", "silent", "reorder_reports"];
+const SCU_FAULTS = ["false_claim", "lose_bottles"];
+const SILENT_AFTER_MS = 3000;
+
+const fetchYaml = async (path) => jsyaml.load(await (await fetch(path)).text());
+const element = (tag, attributes = {}, text = "") => {
+  const node = Object.assign(document.createElement(tag), attributes);
+  if (text !== "") node.textContent = text;
+  return node;
+};
+
+async function readUnit(name, entry, address) {
+  const contract = await fetchYaml(`contracts/${entry.contract}`);
+  const behaviour = await fetchYaml(`contracts/${entry.states}`);
+  const topic = (channel) => contract.channels[channel]?.address
+    .replace(/{(\w+)}/g, (_, key) => address[key]);
+  const nameOf = Object.fromEntries(
+    Object.entries(behaviour.states).map(([state, { number }]) => [number, state]));
+  return {
+    name, states: behaviour.states, nameOf,
+    status: topic("status"), command: topic("command"), settings: topic("settings"),
+    online: topic("online"), fault: `${topic("status")}/fault`,
+    parameters: contract.components.messages.settings?.payload.properties ?? {},
+    report: null, isOnline: null, lastSeen: 0, view: {},
+  };
+}
+
+function buildCommands(unit, client) {
+  unit.view.buttons = {};
+  const buttons = element("div", { className: "buttons" });
+  const commands = new Set(Object.values(unit.states).flatMap((s) => Object.keys(s.commands)));
+  // Abort last and set apart: no one should hit it on the way to another button.
+  for (const command of [...commands].sort((a, b) => (a === "Abort") - (b === "Abort"))) {
+    const button = element("button", { className: command === "Abort" ? "abort" : "" }, command);
+    button.onclick = () => client.publish(unit.command, JSON.stringify({ command }), { qos: 1 });
+    unit.view.buttons[command] = button;
+    buttons.append(button);
+  }
+  return buttons;
+}
+
+// The SCU's commands are those of the whole line, so they stand at the top of the page.
+function buildCard(unit, client, faults, withCommands) {
+  const card = element("section", { className: "card" });
+  const head = element("div", { className: "row" });
+  head.append(element("h2", {}, unit.name));
+  unit.view.state = element("span", { className: "state" }, "no report");
+  head.append(unit.view.state);
+  card.append(head);
+
+  unit.view.fields = element("table");
+  card.append(unit.view.fields);
+
+  if (withCommands) card.append(buildCommands(unit, client));
+
+  for (const [parameter, limits] of Object.entries(unit.parameters)) {
+    const input = element("input", { type: "number", min: limits.minimum, max: limits.maximum,
+                                     step: limits.type === "integer" ? 1 : "any" });
+    input.dataset.parameter = parameter;
+    const button = element("button", {}, "Set");
+    button.onclick = () => {
+      if (input.value === "") return;
+      const message = { [parameter]: Number(input.value) };
+      client.publish(unit.settings, JSON.stringify(message), { qos: 1 });
+      input.value = "";
+    };
+    const row = element("div", { className: "setting" });
+    row.append(element("span", {}, parameter));
+    const controls = element("span");
+    controls.append(input, " ", button);
+    row.append(controls);
+    card.append(row);
+  }
+
+  const select = element("select", { "aria-label": `Fault of ${unit.name}` });
+  select.append(element("option", { value: "" }, "no fault"));
+  for (const fault of faults) select.append(element("option", { value: fault }, fault));
+  select.onchange = () => client.publish(
+    unit.fault, JSON.stringify({ fault: select.value || null }), { qos: 1 });
+  const row = element("div", { className: "setting" });
+  row.append(element("span", { className: "muted" }, "test fault"), select);
+  card.append(row);
+  return card;
+}
+
+function renderUnit(unit, now) {
+  const stale = now - unit.lastSeen > SILENT_AFTER_MS;
+  const state = unit.report ? unit.nameOf[unit.report.state] ?? `unknown ${unit.report.state}` : null;
+  if (unit.isOnline === false) { unit.view.state.textContent = `gone (last: ${state ?? "–"})`; }
+  else if (!unit.report) { unit.view.state.textContent = "no report"; }
+  else if (stale) { unit.view.state.textContent = `silent (last: ${state})`; }
+  else { unit.view.state.textContent = state; }
+  const healthy = unit.isOnline !== false && unit.report && !stale;
+  unit.view.state.className = `state ${healthy ? "good" : "bad"}`;
+
+  const allowed = unit.states[state]?.commands ?? {};
+  for (const [command, button] of Object.entries(unit.view.buttons)) {
+    button.disabled = !(command in allowed) || !healthy;
+  }
+  unit.view.fields.replaceChildren(...Object.entries(unit.report ?? {})
+    .filter(([key]) => key !== "state")
+    .map(([key, value]) => {
+      const row = element("tr");
+      const shown = typeof value === "number" ? +value.toFixed(2) : value;
+      row.append(element("td", { className: "muted" }, key), element("td", {}, String(shown)));
+      return row;
+    }));
+}
+
+function renderLine(scu, machines, now) {
+  const fresh = machines.every((m) => m.report && m.isOnline !== false && now - m.lastSeen <= SILENT_AFTER_MS);
+  const states = machines.map((m) => m.report && m.nameOf[m.report.state]);
+  const agreed = fresh && states.every((s) => s === states[0]) ? states[0] : null;
+  const claim = scu.report ? scu.nameOf[scu.report.state] : "–";
+  const value = (machine, field) => machine.report?.[field] ?? 0;
+  const [filler, capper, inspector] = machines;
+  const finished = value(capper, "reject_count") + value(inspector, "pass_count")
+    + value(inspector, "reject_count") + value(scu, "in_transit") + value(scu, "lost");
+  const numbers = [
+    ["SCU claims", claim, ""],
+    ["machines", agreed ?? "mixed", agreed && agreed === claim ? "good" : "warn"],
+    ["faulted", scu.report?.faulted_machine ?? "–", scu.report?.faulted_machine ? "bad" : ""],
+    ["filled", value(filler, "filled_count"), ""],
+    ["on the belt", value(scu, "in_transit"), ""],
+    ["passed", value(inspector, "pass_count"), "good"],
+    ["rejected", value(capper, "reject_count") + value(inspector, "reject_count"), ""],
+    ["lost", value(scu, "lost"), value(scu, "lost") ? "bad" : ""],
+    ["unaccounted", value(filler, "filled_count") - finished, ""],
+  ];
+  document.getElementById("line").replaceChildren(...numbers.map(([label, shown, style]) => {
+    const block = element("div", { className: "muted" }, label);
+    block.dataset.number = label;
+    const big = element("b", { className: style }, String(shown));
+    block.append(big);
+    return block;
+  }));
+}
+
+async function main() {
+  const line = await fetchYaml("contracts/line.yaml");
+  const address = line.address;
+  document.getElementById("title").textContent = `Line ${Object.values(address).join(" / ")}`;
+  const machines = await Promise.all(Object.entries(line.machines)
+    .map(([name, entry]) => readUnit(name, entry, address)));
+  const scu = await readUnit(line.controller.name, line.controller, address);
+  const units = [scu, ...machines];
+
+  const parameters = new URLSearchParams(location.search);
+  const url = parameters.get("broker") ?? `ws://${location.hostname}:9001`;
+  const broker = document.getElementById("broker");
+  const login = document.getElementById("login");
+  // Commands go through this, so the cards keep working across a new login.
+  const link = { client: null, publish: (...args) => link.client?.publish(...args) };
+
+  const connect = (options) => {
+    link.client?.end(true);
+    const client = mqtt.connect(url, options);
+    link.client = client;
+    client.on("connect", () => {
+      login.style.display = "none";
+      // Without a login, anyone on this network can do what this page does: say so.
+      broker.textContent = options.username
+        ? `connected to ${url} as ${options.username}`
+        : `INSECURE: connected to ${url} with no login`;
+      broker.className = options.username ? "good" : "bad";
+      client.subscribe(units.flatMap((unit) => [unit.status, unit.online]), { qos: 1 });
+    });
+    client.on("error", (error) => {
+      if (!/auth/i.test(error.message)) return;
+      client.end(true);
+      login.style.display = "flex";
+      broker.textContent = options.username ? "wrong user or password" : "please log in";
+      broker.className = options.username ? "bad" : "muted";
+    });
+    client.on("close", () => {
+      if (login.style.display === "flex") return;
+      broker.textContent = `no connection to ${url}`;
+      broker.className = "bad";
+    });
+    client.on("message", (topic, payload) => {
+      let values;
+      try { values = JSON.parse(payload.toString()); } catch { return; }
+      for (const unit of units) {
+        if (topic === unit.status) { unit.report = values; unit.lastSeen = Date.now(); }
+        if (topic === unit.online) { unit.isOnline = values.online; }
+      }
+    });
+  };
+  login.onsubmit = (event) => {
+    event.preventDefault();
+    connect({ username: document.getElementById("user").value,
+              password: document.getElementById("password").value });
+    document.getElementById("password").value = "";
+  };
+  connect({});
+
+  document.getElementById("line-commands").replaceChildren(
+    ...buildCommands(scu, link).children);
+  document.getElementById("units").append(...units.map((unit) => (unit === scu
+    ? buildCard(unit, link, [...FAULTS, ...SCU_FAULTS], false)
+    : buildCard(unit, link, FAULTS, true))));
+  const render = () => {
+    const now = Date.now();
+    units.forEach((unit) => renderUnit(unit, now));
+    renderLine(scu, machines, now);
+  };
+  setInterval(render, 250);
+  render();
+}
+
+main().catch((error) => {
+  const broker = document.getElementById("broker");
+  broker.textContent = `could not start: ${error}`;
+  broker.className = "bad";
+});
+</script>
+</body>
+</html>

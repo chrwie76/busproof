@@ -34,6 +34,41 @@ channels:
     messages:
       command:
         $ref: "#/components/messages/command"
+  settings:
+    address: "{enterprise}/{site}/{area}/{line}/filler/set"
+    description: New parameters for the machine. It reports the new values in its status.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      settings:
+        $ref: "#/components/messages/settings"
+  online:
+    address: "{enterprise}/{site}/{area}/{line}/filler/online"
+    description: |
+      Retained. The machine sends true when it connects. Its MQTT last will sends false for it
+      when it is gone, which tells "gone" from "has nothing to say".
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      online:
+        $ref: "#/components/messages/online"
+  unit_done:
+    address: "{enterprise}/{site}/{area}/{line}/filler/unit/done"
+    description: A bottle is filled and leaves. The station counts it itself; the transport takes it on.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      unit_done:
+        $ref: "#/components/messages/unit_done"
 
 operations:
   reportStatus:
@@ -44,13 +79,25 @@ operations:
     action: receive
     channel: {$ref: "#/channels/command"}
     summary: The filler takes a command.
+  takeSettings:
+    action: receive
+    channel: {$ref: "#/channels/settings"}
+    summary: The filler takes new parameters.
+  reportOnline:
+    action: send
+    channel: {$ref: "#/channels/online"}
+    summary: The filler says it is there; its last will says when it is gone.
+  reportUnitDone:
+    action: send
+    channel: {$ref: "#/channels/unit_done"}
+    summary: The filler says what became of a bottle.
 
 components:
   messages:
     status:
       payload:
         type: object
-        required: [state, filled_count, fill_level, tank_level]
+        required: [state, filled_count, fill_level, tank_level, bottle_supply, speed, fill_target]
         properties:
           state:
             type: integer
@@ -69,10 +116,25 @@ components:
             type: number
             minimum: 0
             maximum: 100
-            description: How full the supply tank is, in percent.
+            description: How full the supply tank is, in percent. At zero the machine holds.
+          bottle_supply:
+            type: integer
+            minimum: 0
+            maximum: 100000
+            description: Empty bottles left. At zero the machine holds until it is refilled.
+          speed:
+            type: number
+            minimum: 0
+            maximum: 120
+            description: Target speed, in bottles per minute.
+          fill_target:
+            type: number
+            minimum: 50
+            maximum: 100
+            description: Target fill level, in percent of the nominal volume.
       examples:
         - name: running
-          payload: {state: 6, filled_count: 1240, fill_level: 98.5, tank_level: 72.0}
+          payload: {state: 6, filled_count: 1240, fill_level: 98.5, tank_level: 72.0, bottle_supply: 4200, speed: 60.0, fill_target: 98.0}
     command:
       payload:
         type: object
@@ -84,3 +146,58 @@ components:
       examples:
         - name: start
           payload: {command: Start}
+    settings:
+      payload:
+        type: object
+        minProperties: 1
+        additionalProperties: false
+        properties:
+          speed:
+            type: number
+            minimum: 0
+            maximum: 120
+          fill_target:
+            type: number
+            minimum: 50
+            maximum: 100
+          bottle_supply:
+            type: integer
+            minimum: 0
+            maximum: 100000
+          tank_level:
+            type: number
+            minimum: 0
+            maximum: 100
+      examples:
+        - name: change
+          payload: {speed: 60.0}
+    online:
+      payload:
+        type: object
+        required: [online]
+        properties:
+          online:
+            type: boolean
+      examples:
+        - name: there
+          payload: {online: true}
+    unit_done:
+      payload:
+        type: object
+        required: [unit, bottle_fill_level, result]
+        properties:
+          unit:
+            type: string
+            description: Which bottle this is about.
+          bottle_fill_level:
+            type: number
+            minimum: 0
+            maximum: 100
+            description: How full the filler filled it, in percent of the nominal volume.
+          result:
+            type: string
+            enum: [pass, reject, refused]
+            description: Passed on, rejected, or refused because the machine was not producing.
+      examples:
+        - name: passed
+          payload: {unit: bottle-17, bottle_fill_level: 97.8, result: pass}

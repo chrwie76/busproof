@@ -16,6 +16,7 @@ LINE = {
         "oven": {"contract": "machines/oven.asyncapi.yaml"},
     },
 }
+BOSS = {"name": "boss", "contract": "machines/boss.asyncapi.yaml"}
 
 
 def machine_contract(name: str) -> dict:
@@ -31,7 +32,11 @@ def machine_contract(name: str) -> dict:
             },
             "in": {
                 "address": f"{{site}}/{{line}}/{name}/do",
-                "messages": {"m": {"payload": {"properties": {"order": {"enum": ["Go", "Halt"]}}}}},
+                "messages": {
+                    "m": {
+                        "payload": {"properties": {"order": {"enum": ["Go", "Halt"]}, "heat": {}}}
+                    }
+                },
             },
         },
         "operations": {
@@ -49,7 +54,7 @@ def machine_contract(name: str) -> dict:
 @pytest.fixture
 def line_file(tmp_path: Path) -> Path:
     (tmp_path / "machines").mkdir()
-    for name in LINE["machines"]:
+    for name in [*LINE["machines"], BOSS["name"]]:
         contract = tmp_path / "machines" / f"{name}.asyncapi.yaml"
         contract.write_text(yaml.safe_dump(machine_contract(name)))
     path = tmp_path / "line.yaml"
@@ -75,6 +80,47 @@ def test_the_line_keeps_its_name_and_the_order_of_its_machines(line_file):
     assert (line.name, line.machines) == ("line9", ["mixer", "oven"])
 
 
+def test_what_a_machine_receives_without_an_enum_becomes_a_parameter(line_file):
+    line = read_line(line_file)
+
+    assert line.topics("oven", "set heat") == Address("plant9/line9/oven/do", ("heat",))
+
+
+async def test_a_machine_sets_a_parameter_where_the_contract_says(line_file, bus):
+    oven = Machine(bus, read_line(line_file).topics, "oven")
+
+    await oven.set(heat=180)
+
+    assert [(message.topic, message.value) for message in bus.sent] == [
+        ("plant9/line9/oven/do", {"heat": 180})
+    ]
+
+
+async def test_a_parameter_the_contract_does_not_have_fails_and_sends_nothing(line_file, bus):
+    oven = Machine(bus, read_line(line_file).topics, "oven")
+
+    with pytest.raises(ContractError, match="has no 'set colour'"):
+        await oven.set(colour="red")
+
+    assert bus.sent == []
+
+
+def test_a_line_may_name_a_unit_that_coordinates_it(line_file):
+    line = yaml.safe_load(line_file.read_text())
+    line["controller"] = BOSS
+    line_file.write_text(yaml.safe_dump(line))
+
+    contract = read_line(line_file)
+
+    assert contract.controller == "boss"
+    assert contract.machines == ["mixer", "oven"], "the coordinator is no member of the line"
+    assert contract.topics("boss", "Go") == Address("plant9/line9/boss/do", ("order",))
+
+
+def test_a_line_without_one_has_none(line_file):
+    assert read_line(line_file).controller is None
+
+
 def test_a_bus_listens_to_everything_under_the_line(line_file):
     assert read_line(line_file).listen == "plant9/line9/#"
 
@@ -97,7 +143,7 @@ def test_a_name_the_contract_does_not_have_fails_and_lists_the_ones_it_has(line_
         line.topics("oven", "temprature")
 
     assert str(error.value) == (
-        "the contract of oven has no 'temprature'; it has: Go, Halt, state, temperature"
+        "the contract of oven has no 'temprature'; it has: Go, Halt, set heat, state, temperature"
     )
 
 

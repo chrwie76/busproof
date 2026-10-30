@@ -1,0 +1,76 @@
+# The demo plant: a broker, three machines, the SCU that coordinates them, and a page to watch and
+# use it. One image for all units. Use it through `make demo`, which picks the security profile.
+#
+# The defaults here are the `password` profile: TLS and a password generated on the first start.
+# The ports on this computer can be changed in the environment.
+name: busproof-demo
+
+x-unit: &unit
+  build: ./plant
+  image: busproof-demo-plant
+  restart: on-failure
+  environment:
+    PLANT_MQTT_URL: ${PLANT_MQTT_URL:-mqtts://mosquitto:8883}
+    PLANT_MQTT_USERNAME: ${PLANT_MQTT_USERNAME-busproof}
+    PLANT_MQTT_PASSWORD_FILE: /secrets/password
+    PLANT_MQTT_CA: /secrets/ca.crt
+    PLANT_SCENARIO: ${PLANT_SCENARIO:-default}
+  volumes:
+    - ./contracts:/contracts:ro
+    - ./plant/scenarios:/app/scenarios:ro
+    - ./secrets:/secrets:ro
+  depends_on:
+    mosquitto:
+      condition: service_healthy
+
+services:
+  credentials:
+    image: alpine:3.20
+    command: sh /make_credentials.sh
+    volumes:
+      - ./mosquitto/make_credentials.sh:/make_credentials.sh:ro
+      - ./secrets:/secrets
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    entrypoint: sh /start.sh
+    ports:
+      - "${BUSPROOF_MQTT_PORT:-8884}:${BROKER_PORT:-8883}"
+      - "127.0.0.1:${BUSPROOF_WS_PORT:-9001}:9001"
+    volumes:
+      - ./mosquitto/start.sh:/start.sh:ro
+      - ./mosquitto/${SECURITY:-password}.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./secrets:/secrets:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "${BROKER_PORT:-8883}"]
+      interval: 2s
+      retries: 10
+    depends_on:
+      credentials:
+        condition: service_completed_successfully
+
+  filler:
+    <<: *unit
+    command: filler
+
+  capper:
+    <<: *unit
+    command: capper
+
+  inspector:
+    <<: *unit
+    command: inspector
+
+  scu:
+    <<: *unit
+    command: scu
+
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "127.0.0.1:${BUSPROOF_WEB_PORT:-8088}:80"
+    volumes:
+      - ./plant/web:/usr/share/nginx/html:ro
+      - ./contracts:/usr/share/nginx/html/contracts:ro
+    depends_on:
+      - mosquitto

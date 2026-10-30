@@ -236,7 +236,8 @@ catch its faults? Only the last is what the tool is for.
 | --- | --- | --- |
 | **M0** | Skeleton | `uv sync`, lint, pyright and an empty test suite run green in CI. |
 | **M1** | The language | A `line` fixture with hand-written, typed entity classes (autocompletion in VS Code, like page objects); `expect` with 3 matchers; a recorder that buffers every message of a test; fake bus and MQTT adapter; tests offline. |
-| **M2** | The demo plant | Own small PackML simulation on MQTT (UNS topics, mounted AsyncAPI file) + fault switch + HTML page, `make demo` with secrets generated on first start and the security profiles `open` and `password` (default); an example suite catches a product fault a control suite misses. README shows it. **First public release, also on PyPI** (Trusted Publishing, TestPyPI first). |
+| **M2** | The demo plant | Own small PackML simulation on MQTT: three machines and an SCU as services (UNS topics, mounted contracts) + fault switch + HTML page, `make demo` with secrets generated on first start and the security profiles `open` and `password` (default); an example suite catches a product fault a control suite misses. README shows it. |
+| **M2-rest** | What M2 left open | **First public release, also on PyPI** (Trusted Publishing, TestPyPI first; the workflow is ready); what the SCU does when it restarts while the machines run; a test for a service that really dies, not only one that goes silent; processing times at the stations, so a line can jam. |
 | **M3** | Two systems | MES service over REST (OpenAPI); tests that span MES order → line → MQTT result; security profile `mtls`. |
 | **M4** | Knowledge | AsyncAPI/OpenAPI import → contract → test ideas checklist; **a contract discovered from a recording of the demo plant**, with its origin, and the loop that sharpens it (decision 24); templates; first knowledge pages. |
 | **M5** | Evidence | The five parts of §4.5: JUnit + JSONL + a report for people with *pass / fail / inconclusive / skipped-with-reason*, mapped to the ISO/IEC/IEEE 29119-3 test documents. |
@@ -244,11 +245,11 @@ catch its faults? Only the last is what the tool is for.
 | **M7** | Catch power | A fault catalog for the demo plant and the fraction the shipped suite catches, stated honestly. |
 
 M0–M2 are the minimum for the CV link to be worth clicking. After that, each milestone is a
-release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplug B payloads.
+release with a short changelog entry. Later candidates: an OPC UA adapter, shown by the same tests passing over another bus (decision 26); Sparkplug B payloads.
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -267,8 +268,7 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25):
     into it. **One service per machine** — one image, started as `filler`, `capper` or
     `inspector` — as one contract per machine (decision 23) asks for: a single machine can be
     started and tested alone (FAT), one can be stopped while the others run, and the line's
-    consensus shows it. The machines pass a bottle on to each other over MQTT, as in a real
-    line; how exactly is settled in M2.
+    consensus shows it. A fourth service, the SCU, coordinates them (decision 26).
 12. **The web page is plain HTML** on MQTT WebSockets, no Streamlit, no backend.
 13. **Contracts: the wire and the behaviour are two files.** For MQTT, `asyncapi.yaml` says how
     the system speaks (topics, payloads, types, ranges); `line.yaml` says how it behaves and
@@ -313,7 +313,10 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25):
     Chosen with `make demo SECURITY=…`. Order: `open` first with the switch built in, `password`
     as the default in M2, `mtls` after it. Under `mtls` the web page still connects with a
     password, because browsers handle client certificates poorly. The `.env.example` names file
-    *paths* for CA, certificate and key — never their contents.
+    *paths* for CA, certificate and key — never their contents. `open` and `password` are built;
+    `mtls` follows with M3. A browser would not trust the demo's own certificate authority, so
+    the page's WebSocket port stays plain and is published to this computer only; a real
+    installation serves it with a proper certificate.
 18. **Entities and fixtures follow the page-object pattern** — the same shape as a Playwright
     project, translated:
 
@@ -424,9 +427,43 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25):
     counts; so a second plant is a section, not a change to a test. The fixtures every project
     needs — `settings`, `contract`, `bus` — come with BusProof as a pytest plugin, as `page`
     comes with pytest-playwright; what belongs to one plant — `line`, `running_line` — is in the
-    project's `conftest.py`. Until the plant exists (M2), a **stand-in** in the test project
-    plays the machines over the fake bus from the same contracts (`make line-tests`). It proves
-    the wiring and that the tests can turn red; it proves nothing about a plant.
+    project's `conftest.py`. A stand-in plant over the fake bus carried the tests through M1 and
+    went once the plant ran in Docker: playing an SCU too, it would have become a second plant.
+    So `make check` stays offline, and `make line-tests` needs Docker, also in CI.
+26. **An SCU coordinates the line, and all of it speaks MQTT for now.** The SCU is the central
+    unit of the demo plant, with a contract of its own. It takes line commands and passes them
+    on in the order `line.yaml` gives (start from the end of the line, stop from its beginning),
+    reports a line state of its own, reacts when a machine fails or goes silent, and plays the
+    transport: it knows where a bottle is and when it arrives. It counts nothing: each station
+    counts its own ("one number, one owner"). Its state is a *claim* that tests compare with the
+    consensus BusProof derives from the machines, so a line controller reporting `Execute` over
+    a half-running line is a finding. Each unit, machine or SCU, takes commands from outside,
+    reports after a command and on every change, and repeats its whole state as a heartbeat.
+    MQTT's last will tells "silent" from "gone". Machines stay directly reachable, so a machine
+    can be tested without the SCU (FAT) and the web page can stop one or change its parameters
+    behind the SCU's back, which the SCU must notice from the reports. `Abort` is the demo's
+    emergency stop and only a logical one: a real one is a hard-wired safety circuit, never a
+    message on a bus. Real plants often use OPC UA between SCU and machines. It comes later,
+    on purpose, as the proof that *the same tests pass over another bus*; the plant keeps its
+    communication in one place to make that possible.
+27. **Bottles take time, and supplies run out.** A bottle begins at the filler, and the SCU carries
+    it from station to station in the times `line.yaml` gives; each station judges it and counts
+    it itself. So a fault at the start of the line shows seconds later at its end, which is what
+    an asynchronous test is for. The belt runs in `Execute`, and on `Stop` until it is empty, so
+    the others stop only then; it stands still in `Hold`; an `Abort` loses what is on it, and the
+    SCU says how many. Hence a balance a test can check: filled = rejected + passed + in transit
+    + lost. Empty bottles, liquid and caps are start values in `config.json`, reported in the
+    status and refilled over `…/set`. An empty supply makes the machine hold, as PackML means
+    `Hold`: a reason inside the machine (`Suspend` would be one from outside). The SCU notices
+    and holds the line; after a refill, `Unhold` brings it back.
+28. **Two handles for a test: faults while it runs, scenarios for how it starts.** A fault that no
+    parameter can cause is switched by a message to `…/<unit>/fault`, in the running plant. No
+    contract knows that topic, as a real machine has no such handle (`demo/plant/FAULTS.md`). A
+    scenario is a small file naming what differs from `config.json`; a test asks for one with
+    `@pytest.mark.scenario("low_caps")`, and the units restart while the broker and the test's
+    recording stay. `tests/faults/` switches each fault on and requires the check meant for it to
+    find it, and a clean run not to: the seed of catch power (M7). A unit says it is online only
+    once it listens, so no first command gets lost after a restart.
 
 To settle later:
 

@@ -4,6 +4,7 @@ from machines.capper import Capper
 from machines.filler import Filler
 from machines.inspector import Inspector
 from machines.line import PackagingLine
+from machines.scu import Scu
 from machines.state import State
 
-__all__ = ["Capper", "Filler", "Inspector", "PackagingLine", "State"]
+__all__ = ["Capper", "Filler", "Inspector", "PackagingLine", "Scu", "State"]

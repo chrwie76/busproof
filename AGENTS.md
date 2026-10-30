@@ -22,7 +22,7 @@ agents that the playbook and its skills start. A person working here follows the
 | Where | What |
 | --- | --- |
 | `.claude/settings.json` | Permission rules: Claude Code may not read or edit secret files. |
-| `tools/guard.py` | Runs before every tool call of Claude Code and refuses calls that touch a secret, also through the shell. Tested in `tests/test_guard.py`. |
+| `tools/guard.py` | Runs before every tool call of Claude Code and refuses calls that touch a secret, also through the shell. Tested in `tests/repo/test_guard.py`. |
 | `.pre-commit-config.yaml` | gitleaks scans every commit for secrets — for people and agents alike. |
 
 The editor rule cannot be enforced by a tool: a guard does not see what is open in the editor.

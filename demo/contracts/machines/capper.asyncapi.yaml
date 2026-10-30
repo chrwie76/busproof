@@ -34,6 +34,52 @@ channels:
     messages:
       command:
         $ref: "#/components/messages/command"
+  settings:
+    address: "{enterprise}/{site}/{area}/{line}/capper/set"
+    description: New parameters for the machine. It reports the new values in its status.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      settings:
+        $ref: "#/components/messages/settings"
+  online:
+    address: "{enterprise}/{site}/{area}/{line}/capper/online"
+    description: |
+      Retained. The machine sends true when it connects. Its MQTT last will sends false for it
+      when it is gone, which tells "gone" from "has nothing to say".
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      online:
+        $ref: "#/components/messages/online"
+  unit:
+    address: "{enterprise}/{site}/{area}/{line}/capper/unit"
+    description: A bottle has arrived at this station, brought by the transport.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      unit:
+        $ref: "#/components/messages/unit"
+  unit_done:
+    address: "{enterprise}/{site}/{area}/{line}/capper/unit/done"
+    description: The station has judged a bottle. The station counts it itself; the transport takes it on.
+    parameters:
+      enterprise: {description: "ISA-95 enterprise"}
+      site: {description: "ISA-95 site"}
+      area: {description: "ISA-95 area"}
+      line: {description: "ISA-95 line"}
+    messages:
+      unit_done:
+        $ref: "#/components/messages/unit_done"
 
 operations:
   reportStatus:
@@ -44,13 +90,29 @@ operations:
     action: receive
     channel: {$ref: "#/channels/command"}
     summary: The capper takes a command.
+  takeSettings:
+    action: receive
+    channel: {$ref: "#/channels/settings"}
+    summary: The capper takes new parameters.
+  reportOnline:
+    action: send
+    channel: {$ref: "#/channels/online"}
+    summary: The capper says it is there; its last will says when it is gone.
+  takeUnit:
+    action: receive
+    channel: {$ref: "#/channels/unit"}
+    summary: A bottle arrives at the capper.
+  reportUnitDone:
+    action: send
+    channel: {$ref: "#/channels/unit_done"}
+    summary: The capper says what became of a bottle.
 
 components:
   messages:
     status:
       payload:
         type: object
-        required: [state, good_count, reject_count]
+        required: [state, good_count, reject_count, cap_supply, torque_target]
         properties:
           state:
             type: integer
@@ -69,9 +131,19 @@ components:
             minimum: 0
             maximum: 5
             description: Capping torque of the last bottle, in Nm.
+          cap_supply:
+            type: integer
+            minimum: 0
+            maximum: 100000
+            description: Caps left. At zero the machine holds until it is refilled.
+          torque_target:
+            type: number
+            minimum: 0
+            maximum: 5
+            description: Target capping torque, in Nm. A cap closed outside 1.5 to 2.5 Nm is a reject.
       examples:
         - name: running
-          payload: {state: 6, good_count: 1234, reject_count: 4, torque: 2.1}
+          payload: {state: 6, good_count: 1234, reject_count: 4, torque: 2.1, cap_supply: 4200, torque_target: 2.0}
     command:
       payload:
         type: object
@@ -83,3 +155,66 @@ components:
       examples:
         - name: start
           payload: {command: Start}
+    settings:
+      payload:
+        type: object
+        minProperties: 1
+        additionalProperties: false
+        properties:
+          cap_supply:
+            type: integer
+            minimum: 0
+            maximum: 100000
+          torque_target:
+            type: number
+            minimum: 0
+            maximum: 5
+      examples:
+        - name: change
+          payload: {cap_supply: 5000}
+    online:
+      payload:
+        type: object
+        required: [online]
+        properties:
+          online:
+            type: boolean
+      examples:
+        - name: there
+          payload: {online: true}
+    unit:
+      payload:
+        type: object
+        required: [unit, bottle_fill_level]
+        properties:
+          unit:
+            type: string
+            description: Which bottle has arrived.
+          bottle_fill_level:
+            type: number
+            minimum: 0
+            maximum: 100
+            description: How full the filler filled it, in percent of the nominal volume.
+      examples:
+        - name: arrived
+          payload: {unit: bottle-17, bottle_fill_level: 97.8}
+    unit_done:
+      payload:
+        type: object
+        required: [unit, bottle_fill_level, result]
+        properties:
+          unit:
+            type: string
+            description: Which bottle this is about.
+          bottle_fill_level:
+            type: number
+            minimum: 0
+            maximum: 100
+            description: How full the filler filled it, in percent of the nominal volume.
+          result:
+            type: string
+            enum: [pass, reject, refused]
+            description: Passed on, rejected, or refused because the machine was not producing.
+      examples:
+        - name: passed
+          payload: {unit: bottle-17, bottle_fill_level: 97.8, result: pass}

@@ -7,6 +7,7 @@ class Inspector(Machine):
 
     def __init__(self, bus: Bus, topics: Topics):
         super().__init__(bus, topics, name="inspector", states=State)
+        self.online = self.signal("online")
         self.pass_count = self.signal("pass_count")
         self.reject_count = self.signal("reject_count")
         self.last_fill_level = self.signal("last_fill_level")

@@ -9,12 +9,45 @@ Each machine runs as a **service of its own** — one image, started as `filler`
 file what it publishes, `packml.yaml` how it behaves. So one machine can be started and tested
 alone, or stopped while the others run.
 
-What will be here (milestone M2):
+## Running it
+
+```
+make line-tests                           # the whole plant, with its tests
+make fat                                  # the capper alone, with its tests
+make demo                                 # the whole plant and its page, to look at and use
+make demo-down                            # stop it
+```
+
+The page is at http://localhost:8088. The broker listens on port 8884 of this computer, so the demo
+can run next to another broker on 8883. `BUSPROOF_WEB_PORT`, `BUSPROOF_MQTT_PORT` and
+`BUSPROOF_WS_PORT` change the ports.
+
+## What is here
 
 | File | Purpose |
 | --- | --- |
-| `pyproject.toml`, `Dockerfile` | The plant as a package and as an image |
-| `src/plant/` | The simulation |
-| `config.json` | The state the plant starts in: levels, counters, speed, active faults, random seed, physics — one file per scenario |
-| `web/index.html` | The page: live states and counters over MQTT WebSockets, buttons for the faults |
-| `tests/` | The plant's own tests — does the simulation compute right? Not tests *of* the plant; those are in `../line-tests` |
+| `pyproject.toml`, `Dockerfile` | The plant as a package and as one image for all machines |
+| `src/plant/machine.py` | What every machine does: follow the state machine, take parameters, report. No MQTT in it |
+| `src/plant/filler.py`, `capper.py`, `inspector.py` | What only that machine does, in a few lines |
+| `src/plant/scu.py` | The central unit: passes commands on in order, reports the line state it claims, reacts to a machine that fails or is gone, and carries the bottles |
+| `src/plant/contracts.py` | Reads the mounted contracts. There is no fallback copy: a missing file stops the service |
+| `src/plant/link.py` | The one place that touches a bus, so another protocol replaces this file only |
+| `config.json`, `scenarios/` | The state the plant starts in: supplies, parameters, its pace; a scenario names what differs |
+| `FAULTS.md` | The faults a test can switch on while the plant runs |
+| `web/index.html` | The page: one file, no backend. It builds itself from the contracts and speaks MQTT over WebSockets. Stop a machine or change a parameter behind the SCU's back, and watch the line react |
+| `tests/` | The plant's own tests: does the simulation compute right? Tests *of* the plant are in `../line-tests` |
+
+A unit reports its whole state after a command, on every change and as a heartbeat. Its MQTT
+last will says when it is gone.
+
+A bottle begins at the filler and takes the times in `../contracts/line.yaml` to reach each
+station, which judges and counts it itself. When bottles, liquid or caps run out, the machine holds
+and the SCU holds the line; refill over `…/set`, then `Unhold`.
+
+## Security
+
+`make demo` uses the `password` profile: TLS, and a password, a small certificate authority and a
+broker certificate generated on the first start into `demo/secrets/` (ignored by Git, closed to AI
+assistants). `make demo SECURITY=open` is for a quick try, with no login and no encryption. `make
+demo-reset` throws the generated credentials away. The web page's WebSocket port is plain and
+published to this computer only, as a browser would not trust the demo's own certificate authority.
