@@ -75,6 +75,10 @@ def test_the_line_keeps_its_name_and_the_order_of_its_machines(line_file):
     assert (line.name, line.machines) == ("line9", ["mixer", "oven"])
 
 
+def test_a_bus_listens_to_everything_under_the_line(line_file):
+    assert read_line(line_file).listen == "plant9/line9/#"
+
+
 async def test_a_machine_built_on_the_contract_sends_and_reads_where_it_says(line_file, bus):
     oven = Machine(bus, read_line(line_file).topics, "oven")
 

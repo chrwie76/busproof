@@ -248,7 +248,7 @@ release with a short changelog entry. Later candidates: OPC UA adapter, Sparkplu
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–24):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -417,6 +417,16 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24):
     shows how far it carries. Agents help most here, in legacy plants: drafting from
     recordings, listing open questions, proposing what a deviation means; a person decides
     each time. This is what sets BusProof apart, and once it works it is shown as such (M4).
+25. **The same tests anywhere: `BUSPROOF_ENV` picks, the environment supplies.** BusProof reads
+    environment variables, never the `.env` file itself; `.env` is a local convenience, and CI
+    sets the same names as its variables (GitLab: CI/CD variables, the password masked and
+    protected). `BUSPROOF_ENV` picks a section of `busproof.toml`, which says which `line.yaml`
+    counts; so a second plant is a section, not a change to a test. The fixtures every project
+    needs — `settings`, `contract`, `bus` — come with BusProof as a pytest plugin, as `page`
+    comes with pytest-playwright; what belongs to one plant — `line`, `running_line` — is in the
+    project's `conftest.py`. Until the plant exists (M2), a **stand-in** in the test project
+    plays the machines over the fake bus from the same contracts (`make line-tests`). It proves
+    the wiring and that the tests can turn red; it proves nothing about a plant.
 
 To settle later:
 

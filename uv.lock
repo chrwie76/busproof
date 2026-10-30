@@ -156,11 +156,17 @@ name = "line-tests"
 version = "0.1.0"
 source = { virtual = "demo/line-tests" }
 dependencies = [
-    { name = "busproof" },
+    { name = "busproof", extra = ["mqtt"] },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "busproof", editable = "." }]
+requires-dist = [
+    { name = "busproof", extras = ["mqtt"], editable = "." },
+    { name = "pytest", specifier = ">=9.2.0" },
+    { name = "pytest-asyncio", specifier = "==1.4.0" },
+]
 
 [[package]]
 name = "nodeenv"

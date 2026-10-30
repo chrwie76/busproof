@@ -14,6 +14,7 @@ must not run against a guessed topic (AGENTS.md, "The contract is the truth").
 
 import re
 from dataclasses import dataclass
+from os.path import commonpath
 from pathlib import Path
 
 import yaml
@@ -32,6 +33,11 @@ class LineContract:
     machines: list[str]
     # (machine, signal or command) -> where it is
     addresses: dict[tuple[str, str], Address]
+
+    @property
+    def listen(self) -> str:
+        """What a bus subscribes to: everything under the line, also what no contract names."""
+        return commonpath([address.topic for address in self.addresses.values()]) + "/#"
 
     def topics(self, machine: str, name: str) -> Address:
         """Where `name` of `machine` is — a `Topics` function, to hand to a `Machine`."""

@@ -2,7 +2,7 @@
 # Every target runs through uv, so it uses the versions pinned in uv.lock.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lint format typecheck test check clean
+.PHONY: help install lint format typecheck test line-tests check clean
 
 help:  ## List the commands
 	@grep -E '^[a-z]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-10s %s\n", $$1, $$2}'
@@ -25,7 +25,10 @@ typecheck:  ## Check types
 test:  ## Run the tests
 	uv run pytest
 
-check: lint typecheck test  ## Everything CI runs
+line-tests:  ## Run the demo's test project, offline against its stand-in plant
+	cd demo/line-tests && BUSPROOF_ENV=offline uv run pytest
+
+check: lint typecheck test line-tests  ## Everything CI runs
 
 clean:  ## Remove caches and build output
 	rm -rf .pytest_cache .ruff_cache dist build

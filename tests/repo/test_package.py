@@ -1,9 +1,21 @@
 """The package installs and knows its version — the smallest proof that the build works."""
 
+import re
 import subprocess
 import sys
+from pathlib import Path
 
 import busproof
+
+
+def test_the_test_project_uses_only_the_public_interface():
+    # So it could move to a repository of its own unchanged (docs/CONCEPT.md, decision 19).
+    project = Path(__file__).parents[2] / "demo" / "line-tests"
+    sources = [path for path in project.rglob("*.py") if ".venv" not in path.parts]
+    assert sources
+
+    for path in sources:
+        assert not re.search(r"^\s*(from|import) busproof\.", path.read_text(), re.M), path
 
 
 def test_the_package_has_a_version_from_git():

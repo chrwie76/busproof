@@ -13,6 +13,10 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.entry-points.pytest11]
+# Gives every project with BusProof installed the fixtures `settings`, `contract` and `bus`.
+busproof = "busproof.pytest_plugin"
+
 [project.optional-dependencies]
 mqtt = [
     "aiomqtt==2.5.1",
@@ -55,13 +59,13 @@ asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 100
-src = ["src", "tools"]  # where our own imports live, for sorting them apart from third-party ones
+src = ["src", "tools", "demo/line-tests"]  # where our own imports live, for sorting them apart from third-party ones
 
 [tool.ruff.lint]
 # pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.pyright]
-include = ["src", "tests", "tools"]
-extraPaths = ["tools"]
+include = ["src", "tests", "tools", "demo/line-tests"]
+extraPaths = ["tools", "demo/line-tests"]
 typeCheckingMode = "standard"

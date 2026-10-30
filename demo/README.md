@@ -22,5 +22,4 @@ would have: a system, the agreement on how it talks, and a test project for it.
 Because of these rules, each part could move to a repository of its own unchanged: the plant as a
 Docker image with its contracts, the test project as a template others start from.
 
-Status: the folders are placed; they are filled in milestones M1 (line-tests) and M2 (plant,
-contracts, `compose.yaml`).
+Status: `contracts/` and `line-tests/` are filled (M1); `plant/` and `compose.yaml` come in M2.

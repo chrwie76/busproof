@@ -3,7 +3,7 @@
 **Make your system bus-proof.** Tests for asynchronous interfaces — events, messages, timing —
 from a mocked service to real hardware.
 
-> **Status: M1 of 8 — the language, in progress.** What it becomes and in which order:
+> **Status: M1 of 8 — the language, done on its branch; next the demo plant.** What it becomes and in which order:
 > [docs/CONCEPT.md](docs/CONCEPT.md). The ideas it is built on: [docs/IDEAS.md](docs/IDEAS.md).
 > How to use it, step by step, as far as it is tried: [docs/PLAYBOOK.md](docs/PLAYBOOK.md).
 
@@ -11,11 +11,12 @@ from a mocked service to real hardware.
 import asyncio
 
 from busproof import expect
+from machines import State  # the test project's own: what the numbers on the wire mean
 
 
 async def test_the_line_makes_good_units_and_no_rejects(line):
     await line.start()
-    await expect(line.state).to_be("Execute", within=10)
+    await expect(line.state).to_be(State.EXECUTE, within=10)
     await asyncio.gather(
         expect(line.capper.good_count).rises_by(5, within=30),
         expect(line.inspector.reject_count).remains(during=30),
