@@ -2,6 +2,7 @@
 
 from importlib.metadata import version
 
+from busproof.contract import ContractError, LineContract, read_line
 from busproof.expect import ExpectationFailed, expect
 from busproof.machines import Address, Line, Machine, Topics
 from busproof.signals import Consensus, Mixed, Signal
@@ -10,11 +11,14 @@ __version__ = version("busproof")
 __all__ = [
     "Address",
     "Consensus",
+    "ContractError",
     "ExpectationFailed",
     "Line",
+    "LineContract",
     "Machine",
     "Mixed",
     "Signal",
     "Topics",
     "expect",
+    "read_line",
 ]

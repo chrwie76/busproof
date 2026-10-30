@@ -13,6 +13,8 @@ import pytest
 import yaml
 from jsonschema import Draft7Validator
 
+from busproof import Address, read_line
+
 CONTRACTS = Path(__file__).parents[2] / "demo" / "contracts"
 ASYNCAPI = Draft7Validator(
     json.loads((Path(__file__).parent / "schemas" / "asyncapi-3.0.0.json").read_text())
@@ -137,3 +139,15 @@ def test_the_line_fills_exactly_the_parameters_of_every_address():
         contract = yaml.safe_load((CONTRACTS / machine["contract"]).read_text())
         for channel in contract["channels"].values():
             assert set(re.findall(r"{(\w+)}", channel["address"])) == set(LINE["address"])
+
+
+def test_busproof_reads_the_demo_line_into_topics():
+    line = read_line(CONTRACTS / "line.yaml")
+
+    assert line.machines == ["filler", "capper", "inspector"]
+    assert line.topics("capper", "good_count") == Address(
+        "acme/plant1/packaging/line1/capper", ("good_count",)
+    )
+    assert line.topics("inspector", "Start") == Address(
+        "acme/plant1/packaging/line1/inspector/cmd", ("command",)
+    )

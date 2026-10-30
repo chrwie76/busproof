@@ -14,10 +14,10 @@ LINE = "acme/plant1/packaging/line1"
 CAPPER = f"{LINE}/capper"
 
 
-def topics(machine: str, signal: str) -> Address:
-    if signal == "start":
-        return Address(f"{LINE}/{machine}/cmd")
-    return Address(f"{LINE}/{machine}", (signal,))
+def topics(machine: str, name: str) -> Address:
+    if name in ("Start", "Stop"):
+        return Address(f"{LINE}/{machine}/cmd", ("command",))
+    return Address(f"{LINE}/{machine}", (name,))
 
 
 class Capper(Machine):
@@ -26,7 +26,7 @@ class Capper(Machine):
         self.good_count = self.signal("good_count")
 
     async def start(self) -> None:
-        await self.send("start")
+        await self.send("Start")
 
 
 def test_a_signal_takes_its_address_from_topics_and_its_name_from_the_machine(bus):
@@ -58,7 +58,17 @@ async def test_a_line_of_machines_that_send_numbers_is_read_by_name(bus):
 async def test_a_command_is_sent_to_the_topic_topics_gives_for_it(bus):
     await Capper(bus, topics).start()
 
-    assert [(message.topic, message.value) for message in bus.sent] == [(f"{CAPPER}/cmd", None)]
+    assert [(message.topic, message.value) for message in bus.sent] == [
+        (f"{CAPPER}/cmd", {"command": "Start"})
+    ]
+
+
+async def test_a_command_without_a_path_is_sent_as_its_bare_name(bus):
+    await Machine(bus, lambda machine, name: Address(f"{LINE}/{machine}/{name}"), "capper").send(
+        "Stop"
+    )
+
+    assert [(message.topic, message.value) for message in bus.sent] == [(f"{CAPPER}/Stop", "Stop")]
 
 
 async def test_a_machine_signal_is_read_from_the_machines_message(bus):
@@ -72,11 +82,11 @@ async def test_a_machine_signal_is_read_from_the_machines_message(bus):
 async def test_a_line_sends_a_command_to_every_machine_in_its_order(bus):
     line = Line(bus, [Machine(bus, topics, "filler"), Machine(bus, topics, "capper")])
 
-    await line.send("start", {"batch": 7})
+    await line.send("Stop")
 
     assert [(message.topic, message.value) for message in bus.sent] == [
-        (f"{LINE}/filler/cmd", {"batch": 7}),
-        (f"{LINE}/capper/cmd", {"batch": 7}),
+        (f"{LINE}/filler/cmd", {"command": "Stop"}),
+        (f"{LINE}/capper/cmd", {"command": "Stop"}),
     ]
 
 

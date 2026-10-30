@@ -32,6 +32,8 @@ class Address:
 
 
 # topics("capper", "good_count") -> Address("acme/…/line1/capper", ("good_count",))
+# topics("capper", "Start")      -> Address("acme/…/line1/capper/cmd", ("command",))
+# Written by hand in a test, or `read_line(...).topics` from the contracts.
 Topics = Callable[[str, str], Address]
 
 
@@ -50,8 +52,14 @@ class Machine:
             self.bus, address.topic, name=f"{self.name}.{name}", path=address.path, enum=enum
         )
 
-    async def send(self, command: str, value: object = None) -> None:
-        await self.bus.send(self.topics(self.name, command).topic, value)
+    async def send(self, command: str) -> None:
+        """Send `command` where the contract says: `Start` to `…/capper/cmd` as
+        `{"command": "Start"}` — the name placed at the address's path, or bare without one."""
+        address = self.topics(self.name, command)
+        payload: object = command
+        for key in reversed(address.path):
+            payload = {key: payload}
+        await self.bus.send(address.topic, payload)
 
 
 class Line:
@@ -64,7 +72,7 @@ class Line:
         self.machines = list(machines)
         self.state = Consensus(bus, [machine.state for machine in self.machines], f"{name}.state")
 
-    async def send(self, command: str, value: object = None) -> None:
+    async def send(self, command: str) -> None:
         """Send a command to every machine, in the order the line lists them."""
         for machine in self.machines:
-            await machine.send(command, value)
+            await machine.send(command)

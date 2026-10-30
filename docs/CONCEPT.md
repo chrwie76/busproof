@@ -379,8 +379,10 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24):
     each machine's service, the same `line.yaml` is what the plant publishes under and what the
     tests read, so there is one source. On a real line this is the prefix an integrator sets
     at commissioning; `line.yaml` is its written-down form. Topics never go into `.env`: an
-    agent writing a test must be able to read them. Until the contract is read (M1 step 5), a machine gets its
-    topics from a function the test writes by hand: `topics("capper", "good_count")`.
+    agent writing a test must be able to read them. A machine gets its topics from a function,
+    `topics("capper", "good_count")`; `read_line("…/line.yaml").topics` builds it from the
+    contracts — what a machine *sends* are its signals, what it *receives* its commands — and a
+    name the contract lacks fails at once, listing the names it has.
 22. **States are numbers on the wire and names in a test.** The demo plant sends PackTags
     numbers (`"state": 6`), as real controllers do and as OPC UA and gRPC do anyway. A test
     reads them through an `IntEnum` the test project writes (`State.EXECUTE`, with
