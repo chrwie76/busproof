@@ -1,5 +1,6 @@
 """The demo's contracts hold together: each machine contract is valid AsyncAPI 3.0, the state
-machine is sound, and every machine speaks the state numbers the state machine defines.
+machine is sound, every machine speaks the state numbers the state machine defines, and the
+line is made of exactly these machines.
 
 These check the files, not the plant — whether the plant keeps to them is what line-tests is for.
 """
@@ -19,6 +20,7 @@ ASYNCAPI = Draft7Validator(
 PACKML = yaml.safe_load((CONTRACTS / "packml.yaml").read_text())
 STATES: dict[str, dict] = PACKML["states"]
 MACHINES = sorted((CONTRACTS / "machines").glob("*.asyncapi.yaml"))
+LINE = yaml.safe_load((CONTRACTS / "line.yaml").read_text())
 
 
 def test_every_state_has_its_own_number():
@@ -108,3 +110,30 @@ def test_a_machine_contract_does_not_say_where_it_stands(path):
     assert "servers" not in contract
     for channel in contract["channels"].values():
         assert channel["address"].startswith("{enterprise}/{site}/{area}/{line}/")
+
+
+# --- the line ------------------------------------------------------------------------------------
+
+
+def test_the_line_names_exactly_the_machine_contracts_there_are():
+    named = {CONTRACTS / machine["contract"] for machine in LINE["machines"].values()}
+
+    assert named == set(MACHINES)
+
+
+def test_each_machine_of_the_line_follows_a_state_machine_that_exists():
+    for name, machine in LINE["machines"].items():
+        assert (CONTRACTS / machine["states"]).is_file(), name
+
+
+def test_each_machine_publishes_under_its_own_name():
+    for name, machine in LINE["machines"].items():
+        contract = yaml.safe_load((CONTRACTS / machine["contract"]).read_text())
+        assert contract["channels"]["status"]["address"].endswith(f"/{name}"), name
+
+
+def test_the_line_fills_exactly_the_parameters_of_every_address():
+    for machine in LINE["machines"].values():
+        contract = yaml.safe_load((CONTRACTS / machine["contract"]).read_text())
+        for channel in contract["channels"].values():
+            assert set(re.findall(r"{(\w+)}", channel["address"])) == set(LINE["address"])

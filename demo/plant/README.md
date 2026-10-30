@@ -4,6 +4,11 @@ A small simulation of a packaging line (filler → capper → inspector) that pu
 a Unified Namespace, follows the PackML state model, and has a web page to watch it and to switch
 faults on. It is the *system*: it knows nothing of BusProof and speaks only its contract.
 
+Each machine runs as a **service of its own** — one image, started as `filler`, `capper` or
+`inspector` — with `../contracts/` mounted: `line.yaml` tells it where it stands, its AsyncAPI
+file what it publishes, `packml.yaml` how it behaves. So one machine can be started and tested
+alone, or stopped while the others run.
+
 What will be here (milestone M2):
 
 | File | Purpose |

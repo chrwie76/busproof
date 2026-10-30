@@ -264,7 +264,11 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24):
 9. **Plain pytest, no pytest-bdd** (§6).
 10. **A vision beyond the milestones** is kept in §10, so M1–M2 can stay small.
 11. **An own small simulation** in `demo/plant/`, not an existing twin; contract files are mounted
-    into it.
+    into it. **One service per machine** — one image, started as `filler`, `capper` or
+    `inspector` — as one contract per machine (decision 23) asks for: a single machine can be
+    started and tested alone (FAT), one can be stopped while the others run, and the line's
+    consensus shows it. The machines pass a bottle on to each other over MQTT, as in a real
+    line; how exactly is settled in M2.
 12. **The web page is plain HTML** on MQTT WebSockets, no Streamlit, no backend.
 13. **Contracts: the wire and the behaviour are two files.** For MQTT, `asyncapi.yaml` says how
     the system speaks (topics, payloads, types, ranges); `line.yaml` says how it behaves and
@@ -361,17 +365,21 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24):
     types, states — is in the **contract**, read by the plant and the tests alike, so the two
     cannot drift apart. *Where it runs* — broker address, user, password — is in **`.env`**,
     which changes with the environment and stays closed to agents. *How we test* — which
-    contract, which line, default waiting time — is in **`busproof.toml`** of the test project.
+    line file, default waiting time — is in **`busproof.toml`** of the test project.
     Topics follow ISA-95 as a Unified Namespace does: `{enterprise}/{site}/{area}/{line}/
     {machine}`, in the demo `acme/plant1/packaging/line1/capper` — `acme` being the classic
     made-up company of software examples, so no reader mistakes it for a real one. **One message
-    per machine** carries its whole state, `{"state": "Execute", "good_count": 123, …}`, sent
+    per machine** carries its whole state, `{"state": 6, "good_count": 123, …}`, sent
     again on every change and at a steady pace: each machine is a unit of its own (PackML), the
     line's state stays what BusProof derives, and a repeated value is fresh evidence for
     `remains`. A signal is a topic plus a path into the payload, so a plant that sends one
     message per line works too. The part of a topic that differs per site is an AsyncAPI
-    channel parameter, filled from `busproof.toml`. Topics never go into `.env`: an agent writing a
-    test must be able to read them. Until the contract is read (M1 step 5), a machine gets its
+    channel parameter, filled from **`line.yaml`** — not from `busproof.toml`, as first written
+    here: the plant must know where it stands too, and it reads no BusProof file. Mounted into
+    each machine's service, the same `line.yaml` is what the plant publishes under and what the
+    tests read, so there is one source. On a real line this is the prefix an integrator sets
+    at commissioning; `line.yaml` is its written-down form. Topics never go into `.env`: an
+    agent writing a test must be able to read them. Until the contract is read (M1 step 5), a machine gets its
     topics from a function the test writes by hand: `topics("capper", "good_count")`.
 22. **States are numbers on the wire and names in a test.** The demo plant sends PackTags
     numbers (`"state": 6`), as real controllers do and as OPC UA and gRPC do anyway. A test
