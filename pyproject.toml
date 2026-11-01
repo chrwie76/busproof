@@ -42,7 +42,7 @@ dev = [
     "pre-commit>=4.7.0",
     "pyright>=1.1.414",
     "pytest>=9.2.0",
-    "pytest-asyncio==1.4.0",  # 1.4.1 was days old when added; Dependabot proposes it later
+    "pytest-asyncio==1.4.1",  # 1.4.1 was days old when added; Dependabot proposes it later
     "ruff>=0.17.3",
     "types-pyyaml>=6.0.12.20260906",
 ]
