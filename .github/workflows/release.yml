@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0  # the version is read from the tag
       - uses: astral-sh/setup-uv@v10.3.2
       - run: uv build
-      - uses: pypa/gh-action-pypi-publish@v1.14.2
+      - uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           repository-url: https://test.pypi.org/legacy/
 
@@ -35,4 +35,4 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v10.3.2
       - run: uv build
-      - uses: pypa/gh-action-pypi-publish@v1.14.2
+      - uses: pypa/gh-action-pypi-publish@v1.14.3
