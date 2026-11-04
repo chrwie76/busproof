@@ -5,7 +5,7 @@ name = "line-tests"
 version = "0.1.0"
 description = "Tests of the demo packaging line, written with BusProof."
 requires-python = ">=3.12"
-dependencies = ["busproof[mqtt]", "pytest>=9.2.0", "pytest-asyncio==1.4.0"]
+dependencies = ["busproof[mqtt]", "pytest>=9.2.0", "pytest-asyncio==1.4.1"]
 
 [tool.uv]
 # A test project is run, not installed: there is no package to build.
