@@ -5,21 +5,40 @@
 
 ## 1 · In one sentence
 
-**BusProof is a Python test language for asynchronous industrial interfaces (IIoT) — with the
-knowledge, demos and agent skills to use it — so a team can point it at an MQTT-, REST- or
-OPC UA-connected system described by AsyncAPI or OpenAPI and end up with a pytest suite that
-catches real faults — and evidence an auditor can follow.**
+**BusProof is a Python test language for the behaviour over time of systems that talk through
+messages. A person in a QA role writes tests that read like the requirement, runs them against a
+system reached only over the network and described by a contract, and gets failures that say
+what was seen.**
 
-## 2 · Who it is for, and what they see first
+Today that means MQTT, described by AsyncAPI. REST comes next, to show that a second bus changes
+nothing above the seam. It is a niche on purpose: one thing done well, not every kind of backend
+test.
 
-| Reader | What they need to see in five minutes |
-| --- | --- |
-| A test engineer with an IIoT system (MQTT, OPC UA, MES) | A test that reads like the requirement, and a failure that explains itself. |
-| A developer of one service | The same tests in their CI against a mocked neighbour. |
-| A reviewer of this repository (CV) | `make demo` → a plant runs, a test turns red on a real fault, a report says why. Clean, small, tested code. |
+## 2 · Who it is for, and what surrounds it
 
-The third reader is not a side effect. Every milestone below ends in something that reader can
-run or look at.
+**One user:** someone in a QA role who works in code — a test engineer, or a developer testing
+their own service. Being able to program is assumed. In five minutes they need to see a test that
+reads like the requirement, and a failure that explains itself.
+
+What BusProof exchanges with its surroundings:
+
+| Neighbour | What comes in | What goes out |
+| --- | --- | --- |
+| The test author | Tests written in the language; where the system is (`busproof.toml`, environment variables) | A verdict per test; a failure that says what was expected and what was seen |
+| The system under test | Its messages, over the network | Commands, over the network — and nothing else |
+| Whoever owns the contract (architect, requirement owner) | The contract: what the system offers and how it behaves | An error that lists the names the contract does have, when a test asks for one it lacks |
+
+Four limits follow from this, and every later decision is held against them:
+
+- **Only over the network.** BusProof never imports, patches or reaches into the code of the
+  system under test. The demo plant is reached the same way a customer's plant would be.
+- **Secrets stay apart.** Where the system is and how to log in are separate things; BusProof
+  reads secrets from the environment and never from a file (decision 25).
+- **Everything works without an agent.** A person can write, read and repair a test with the
+  README and the examples alone. An agent may draft; a person reads and owns what stays. If a
+  test cannot be written without an agent, the language is too complicated — a defect here.
+- **No dependency that restricts use.** Nothing with a condition such as "non-commercial"
+  comes in, directly or through another package.
 
 ## 3 · Where it sits — what others already do
 
@@ -172,6 +191,17 @@ There is deliberately no "healer" that repairs a red test to green: a test repai
 party that wanted it green is not evidence.
 
 ## 5 · What is deliberately *not* in it (overkill for now)
+
+What BusProof is not:
+
+- **A tool for people who do not program.** It is a library; its tests are code.
+- **A replacement for the architect or the requirement owner.** What has to be proven comes from
+  them. BusProof is the harness that proves it.
+- **An assistant.** The product is the language and the tests a person owns, not an agent that
+  is told "test this device".
+- **A load or performance test tool.** Others do that well.
+
+What is left out for now:
 
 - A multi-agent framework, LangGraph, or a role-play of "tester agent" and "reviewer agent".
   A plain loop with a gate is enough until it provably is not.
