@@ -1,4 +1,4 @@
-# line-tests — the test project for the packaging line
+# test-project — the tests of the packaging line
 
 Written the way a customer writes tests with BusProof, and laid out so it could be its own
 repository: it depends on `busproof` like any other package and uses only its public interface
@@ -32,7 +32,7 @@ Both start the plant, run the tests and clean up; the whole line takes about fou
 bottle needs real time to travel. To run against a plant already running:
 
 ```
-cd demo/line-tests && BUSPROOF_MQTT_URL=mqtt://localhost:1884 uv run pytest
+cd test-project && BUSPROOF_MQTT_URL=mqtt://localhost:1884 uv run pytest
 ```
 
 No test here names a topic: they come from the contracts in `../contracts/`.

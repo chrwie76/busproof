@@ -14,7 +14,7 @@ build/
 *:Zone.Identifier
 
 # What the demo generates on its first start: every installation has its own
-demo/secrets/
+plant/secrets/
 
 # Local development memory: never leaves this machine
 .memory/

@@ -16,7 +16,7 @@ from checks import switch_fault
 from machines import Capper, Filler, Inspector, PackagingLine, Scu, State
 
 WITHIN = 10  # seconds a precondition may take
-COMPOSE = Path(__file__).parent.parent / "compose.yaml"
+COMPOSE = Path(__file__).parent.parent / "plant" / "compose.yaml"
 DEFAULT = "default"
 UNITS = ["filler", "capper", "inspector", "scu"]
 

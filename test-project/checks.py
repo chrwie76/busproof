@@ -9,7 +9,7 @@ from machines import PackagingLine, State
 
 
 async def switch_fault(unit: Machine, fault: str | None) -> None:
-    """Switch a fault of the simulation on or off (demo/plant/FAULTS.md). Its topic is in no
+    """Switch a fault of the simulation on or off (plant/FAULTS.md). Its topic is in no
     contract, because a real machine has no such handle."""
     await unit.bus.send(f"{unit.state.topic}/fault", {"fault": fault})
 

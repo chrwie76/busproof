@@ -21,7 +21,7 @@ GUARD = Path(__file__).parents[2] / "tools" / "guard.py"
     [
         ("Read", {"file_path": "/home/me/busproof/.env"}),
         ("Read", {"file_path": ".env.local"}),
-        ("Edit", {"file_path": "demo/.env.production"}),
+        ("Edit", {"file_path": "plant/.env.production"}),
         ("Write", {"file_path": "secrets/broker.txt"}),
         ("Read", {"file_path": "certs/server.key"}),
         ("Read", {"file_path": "certs/client.pem"}),
@@ -40,7 +40,7 @@ GUARD = Path(__file__).parents[2] / "tools" / "guard.py"
         ("Bash", {"command": "env"}),
         ("Bash", {"command": "make test; env | sort"}),
         ("Bash", {"command": "docker compose config"}),
-        ("Bash", {"command": "docker-compose -f demo/compose.yaml config"}),
+        ("Bash", {"command": "docker-compose -f plant/compose.yaml config"}),
     ],
 )
 def test_it_refuses_what_touches_a_secret(tool, args):
@@ -52,11 +52,11 @@ def test_it_refuses_what_touches_a_secret(tool, args):
 @pytest.mark.parametrize(
     ("tool", "args"),
     [
-        ("Read", {"file_path": ".env.example"}),
-        ("Edit", {"file_path": "/home/me/busproof/.env.example"}),
-        ("Read", {"file_path": "src/busproof/__init__.py"}),
+        ("Read", {"file_path": "plant/.env.example"}),
+        ("Edit", {"file_path": "/home/me/busproof/test-project/.env.example"}),
+        ("Read", {"file_path": "library/src/busproof/__init__.py"}),
         ("Read", {"file_path": ".envrc.md"}),
-        ("Grep", {"pattern": "\\.env", "path": "src"}),
+        ("Grep", {"pattern": "\\.env", "path": "library/src"}),
         ("Grep", {"pattern": "secrets"}),
         ("Glob", {"pattern": "**/*.py"}),
         ("Bash", {"command": "make check"}),

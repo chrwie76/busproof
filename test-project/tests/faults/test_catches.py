@@ -1,6 +1,6 @@
 """Catch power: with a fault switched on in the plant, do the checks really find it?
 
-A test that was never seen to fail proves little. Here each fault of demo/plant/FAULTS.md is
+A test that was never seen to fail proves little. Here each fault of plant/FAULTS.md is
 switched on, and the check that should find it has to find it.
 """
 

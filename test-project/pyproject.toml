@@ -1,7 +1,7 @@
 # The test project for the demo packaging line — written as a customer would write one.
 
 [project]
-name = "line-tests"
+name = "test-project"
 version = "0.1.0"
 description = "Tests of the demo packaging line, written with BusProof."
 requires-python = ">=3.12"
@@ -22,4 +22,4 @@ pythonpath = ["."]
 addopts = "--strict-markers --import-mode=importlib"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-markers = ["scenario(name): the plant starts from this file in demo/plant/scenarios"]
+markers = ["scenario(name): the plant starts from this file in plant/scenarios"]

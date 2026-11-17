@@ -15,7 +15,7 @@ from jsonschema import Draft7Validator
 
 from busproof import Address, read_line
 
-CONTRACTS = Path(__file__).parents[2] / "demo" / "contracts"
+CONTRACTS = Path(__file__).parents[2] / "contracts"
 ASYNCAPI = Draft7Validator(
     json.loads((Path(__file__).parent / "schemas" / "asyncapi-3.0.0.json").read_text())
 )

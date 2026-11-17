@@ -577,7 +577,8 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28), 2026-11
     `library/`, the workspace and shared settings stay at the root; the test project still uses
     the library from the workspace, so that the published package alone is enough has to be
     shown by a CI step of its own; and the separation stays an agreement, kept by the tests in
-    `tests/repo/`. `make demo` stays the command that starts the plant.
+    `tests/repo/`. `make demo` stays the command that starts the plant. Earlier decisions name
+    paths as they were on their day (`demo/…`, `src/…`).
 
 To settle later:
 

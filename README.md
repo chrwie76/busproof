@@ -22,6 +22,28 @@ await asyncio.gather(
 expected inspector.reject_count to rise by 2 within 20s — it rose by 0; seen: 0 (41 messages)
 ```
 
+## What is where
+
+One repository, four folders — one for each party a test involves:
+
+| Folder | What it is | In real life |
+| --- | --- | --- |
+| [library/](library/) | BusProof itself, published as the package `busproof` | the tool you install |
+| [plant/](plant/) | The system under test: a simulated packaging line, its broker and its web page | the machine builder's product |
+| [contracts/](contracts/) | How the plant talks and how it behaves: one AsyncAPI file per unit, `packml.yaml`, `line.yaml` | the interface agreement between the plant's maker and its testers |
+| [test-project/](test-project/) | The tests of the plant, written with BusProof | your own test repository |
+
+To write a test, open `test-project/`. To change the language, open `library/`. Three rules keep
+the folders apart; tests in `tests/repo/` check the second and the third:
+
+1. **The tool knows no plant.** Nothing in `library/` names a machine, a bottle or a topic of this
+   line.
+2. **The plant knows nothing of BusProof.** A system does not know the tool it is tested with; it
+   speaks only its contract.
+3. **The test project uses BusProof the way any customer would** — through `from busproof import …`,
+   with its own `pyproject.toml` and `busproof.toml`. If it needs something the library does not
+   offer, that is a change to the library, not a workaround there.
+
 ## What works today
 
 - **`expect` that waits:** `to_be`, `rises_by`, `remains`. Silence does not count as stability.

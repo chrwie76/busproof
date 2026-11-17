@@ -1,39 +1,10 @@
-# The one file a Python project is described by — like package.json for Node.
-# Dependencies, tool settings and metadata live here; exact versions live in uv.lock.
+# The repository's root: a workspace of three projects and the settings they share.
+# Each project is described by a pyproject.toml of its own; exact versions live in uv.lock.
 
-[project]
-name = "busproof"
-description = "A test language for asynchronous industrial interfaces: MQTT, REST, OPC UA."
-readme = "README.md"
-license = "Apache-2.0"
-authors = [{ name = "Christoph Wielgus" }]
-requires-python = ">=3.12"
-keywords = ["testing", "mqtt", "asyncapi", "iiot", "packml", "pytest"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Framework :: Pytest",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Manufacturing",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Software Development :: Testing",
-]
-dependencies = [
-    "pyyaml>=6.0",
-]
-dynamic = ["version"]
-
-[project.urls]
-Repository = "https://github.com/chrwie76/busproof"
-
-[project.entry-points.pytest11]
-# Gives every project with BusProof installed the fixtures `settings`, `contract` and `bus`.
-busproof = "busproof.pytest_plugin"
-
-[project.optional-dependencies]
-mqtt = [
-    "aiomqtt==2.5.1",
-]
+[tool.uv.workspace]
+# Several projects in one repository, sharing one .venv and one uv.lock (like npm workspaces):
+# the library that is published, the plant that is tested, and the test project that tests it.
+members = ["library", "plant", "test-project"]
 
 [dependency-groups]
 # Tools for working on BusProof itself; never installed for users.
@@ -47,42 +18,24 @@ dev = [
     "types-pyyaml>=6.0.12.20260906",
 ]
 
-[build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
-
-[tool.uv.workspace]
-# Several projects in one repository, sharing one .venv and one uv.lock (like npm workspaces).
-# The repository root is the tool; demo/ holds a customer's world. The plant joins in M2.
-members = ["demo/line-tests", "demo/plant"]
-
-[tool.hatch.build.targets.sdist]
-# Only the library. The demo and its tests belong to the repository, not to the package.
-include = ["/src", "/LICENSE", "/README.md"]
-
-[tool.hatch.version]
-# The version comes from the Git tag (v0.1.0); commits after it get a .devN suffix.
-source = "vcs"
-
 [tool.pytest.ini_options]
+# From the root, pytest runs the checks on the repository itself. Each project has its own tests.
 testpaths = ["tests"]
 # tools/ holds repository helpers (not part of the package) that have tests of their own.
 pythonpath = ["tools"]
-# importlib: test files in different folders may share a name (demo/line-tests will have its own).
 addopts = ["--strict-markers", "--import-mode=importlib"]
-# Tests may be `async def` without a decorator; each gets its own event loop.
-asyncio_mode = "auto"
+# The library's pytest plugin is installed here too, and its fixtures are asynchronous.
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 100
-src = ["src", "tools", "demo/line-tests", "demo/plant/src"]  # where our own imports live, for sorting them apart from third-party ones
+src = ["library/src", "tools", "test-project", "plant/src"]  # where our own imports live, for sorting them apart from third-party ones
 
 [tool.ruff.lint]
 # pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.pyright]
-include = ["src", "tests", "tools", "demo/line-tests", "demo/plant"]
-extraPaths = ["tools", "demo/line-tests", "demo/plant/src"]
+include = ["library", "tests", "tools", "test-project", "plant"]
+extraPaths = ["tools", "test-project", "plant/src"]
 typeCheckingMode = "standard"

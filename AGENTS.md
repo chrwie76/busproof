@@ -31,7 +31,7 @@ It holds because every agent here reads this file.
 ## The contract is the truth
 
 - **Never invent a topic, payload field, state or command.** What a test or a plant may use is
-  what the contracts say (`demo/contracts/` here; a customer's own elsewhere). A guessed topic
+  what the contracts say (`contracts/` here; a customer's own elsewhere). A guessed topic
   makes a test that checks nothing.
 - **Something missing from the contract?** Say so and ask; do not fill the gap. Adding it is a
   decision for a person (docs/PLAYBOOK.md, step 1).

@@ -1,0 +1,9 @@
+# The image needs the simulation only. Above all, the generated credentials never go into it.
+secrets/
+mosquitto/
+tests/
+web/
+compose.yaml
+.env*
+**/__pycache__/
+.pytest_cache/

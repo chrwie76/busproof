@@ -35,7 +35,7 @@ can run next to another broker on 8883. `BUSPROOF_WEB_PORT`, `BUSPROOF_MQTT_PORT
 | `config.json`, `scenarios/` | The state the plant starts in: supplies, parameters, its pace; a scenario names what differs |
 | `FAULTS.md` | The faults a test can switch on while the plant runs |
 | `web/index.html` | The page: one file, no backend. It builds itself from the contracts and speaks MQTT over WebSockets. Stop a machine or change a parameter behind the SCU's back, and watch the line react |
-| `tests/` | The plant's own tests: does the simulation compute right? Tests *of* the plant are in `../line-tests` |
+| `tests/` | The plant's own tests: does the simulation compute right? Tests *of* the plant are in `../test-project` |
 
 A unit reports its whole state after a command, on every change and as a heartbeat. Its MQTT
 last will says when it is gone.
@@ -47,7 +47,7 @@ and the SCU holds the line; refill over `…/set`, then `Unhold`.
 ## Security
 
 `make demo` uses the `password` profile: TLS, and a password, a small certificate authority and a
-broker certificate generated on the first start into `demo/secrets/` (ignored by Git, closed to AI
+broker certificate generated on the first start into `plant/secrets/` (ignored by Git, closed to AI
 assistants). `make demo SECURITY=open` is for a quick try, with no login and no encryption. `make
 demo-reset` throws the generated credentials away. The web page's WebSocket port is plain and
 published to this computer only, as a browser would not trust the demo's own certificate authority.

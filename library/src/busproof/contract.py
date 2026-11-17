@@ -1,6 +1,6 @@
 """Read a line and its machine contracts, so no test ever writes a topic.
 
-    line = read_line("demo/contracts/line.yaml")
+    line = read_line("contracts/line.yaml")
     capper = Capper(bus, line.topics)          # line.topics("capper", "good_count") -> Address
 
 `line.yaml` names the machines and where the line stands; each machine's AsyncAPI file says what

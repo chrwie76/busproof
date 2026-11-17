@@ -7,7 +7,7 @@
 # The demo's security profile: `make demo SECURITY=open` for a quick try, with no login and no
 # encryption. The default is a generated password over TLS. Compose reads what is exported here.
 SECURITY ?= password
-CREDENTIALS := $(CURDIR)/demo/secrets
+CREDENTIALS := $(CURDIR)/plant/secrets
 export SECURITY
 ifeq ($(SECURITY),open)
 export BROKER_PORT := 1883
@@ -42,18 +42,19 @@ format:  ## Fix style in place
 typecheck:  ## Check types
 	uv run pyright
 
-test:  ## Run the tests
+test:  ## Run the library's tests and the checks on the repository itself
+	cd library && uv run pytest
 	uv run pytest
 
 plant-tests:  ## Run the demo plant's own tests: does the simulation compute right?
-	cd demo/plant && uv run pytest
+	cd plant && uv run pytest
 
 # Starts the plant in Docker, runs tests against it on a real broker, and always cleans up.
 # 1: the units to start, 2: the pytest arguments.
 define against_the_plant
-	docker compose -f demo/compose.yaml up -d --build --wait $(1)
-	(cd demo/line-tests && BUSPROOF_ENV=local $(TEST_CONNECTION) uv run pytest $(2)); \
-	code=$$?; docker compose -f demo/compose.yaml down; exit $$code
+	docker compose -f plant/compose.yaml up -d --build --wait $(1)
+	(cd test-project && BUSPROOF_ENV=local $(TEST_CONNECTION) uv run pytest $(2)); \
+	code=$$?; docker compose -f plant/compose.yaml down; exit $$code
 endef
 
 line-tests:  ## Test the whole line: the plant in Docker, on a real broker
@@ -66,19 +67,19 @@ security-tests:  ## Test who gets into the broker, with the broker alone
 	$(call against_the_plant,mosquitto,tests/security)
 
 demo:  ## Start the plant and its page, in the background
-	docker compose -f demo/compose.yaml up -d --build --wait
+	docker compose -f plant/compose.yaml up -d --build --wait
 	@echo "The line is at http://localhost:$${BUSPROOF_WEB_PORT:-8088} (security: $(SECURITY))"
 ifeq ($(SECURITY),open)
 	@echo "INSECURE: no login and no encryption. For a quick try only."
 else
-	@echo "Log in as busproof, with the password in demo/secrets/password."
+	@echo "Log in as busproof, with the password in plant/secrets/password."
 endif
 
 demo-down:  ## Stop the plant
-	docker compose -f demo/compose.yaml down
+	docker compose -f plant/compose.yaml down
 
 demo-reset: demo-down  ## Stop the plant and throw its generated credentials away
-	docker run --rm -v $(CURDIR)/demo:/demo alpine:3.20 rm -rf /demo/secrets
+	docker run --rm -v $(CURDIR)/plant:/plant alpine:3.20 rm -rf /plant/secrets
 
 check: lint typecheck test plant-tests  ## Everything that runs offline; CI also runs fat and line-tests
 
