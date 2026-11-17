@@ -49,7 +49,7 @@ make check       # style, types and the tests; they need no broker and no networ
 ## Not there yet
 
 REST and OPC UA, the evidence reports, the agent skills, and a release on PyPI. The
-[playbook](docs/PLAYBOOK.md) describes only the steps tried so far.
+playbook — the steps from a contract to a test that catches a fault — moved with the demo.
 
 ## License
 

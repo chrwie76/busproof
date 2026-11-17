@@ -208,7 +208,7 @@ So the agent layer ships as:
 | 9 Explore under a charter | | `explore-system` |
 | 10 Release | **G4** | — |
 
-The playbook itself is [docs/PLAYBOOK.md](PLAYBOOK.md), a living draft: a step is written down
+The playbook itself is `docs/PLAYBOOK.md` in the test project's repository, a living draft: a step is written down
 once it has been gone through for real on the demo line.
 
 ### 4.5 Evidence and where the person sits
@@ -299,7 +299,7 @@ Two repositories (decision 30). This one is the library:
 busproof/
 ├─ src/busproof/     core (layer 1) and knowledge (layer 2)
 ├─ tests/            one file per module, and the checks on the guard and the package
-├─ docs/             IDEAS, CONCEPT, PLAYBOOK
+├─ docs/             IDEAS, CONCEPT
 └─ README.md  Makefile  AGENTS.md  pyproject.toml
 ```
 
@@ -311,6 +311,7 @@ busproof-test-project/
 ├─ tests/  machines/  conftest.py  busproof.toml    the test project, at the root
 ├─ AGENTS.md  .claude/                               its own rules for AI assistants, and the guard
 ├─ contracts/                                        the agreement: AsyncAPI per unit, packml.yaml, line.yaml
+├─ docs/                                             its decisions, and the playbook
 ├─ plant/                                            the system under test; knows nothing of BusProof
 └─ selftest/                                         checks on that repository itself
 ```
@@ -342,72 +343,39 @@ release with a short changelog entry. Later candidates: an OPC UA adapter, shown
 
 Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28), 2026-11-17 (29–30):
 
+Decisions about the demo plant and the test project moved to that repository on 2026-11-17 and
+keep their numbers there, so a reference such as "decision 26" still finds its text.
+
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
 2. **Async only, no sync facade.** Buses in order: MQTT → REST (as an MES) → OPC UA.
-3. **Demo via Docker Compose** with its own Mosquitto; Ubuntu is the supported platform.
+3. *Moved to the test project's decisions, with its number: Demo via Docker Compose.*
 4. **Docs in English, selected pages also in German**, kept in sync by a test.
 5. **Contract** names the normalised internal model; files are called by their format.
 6. **Work in the open.** The repository stays public; the history is part of what it shows.
    `main` only receives finished milestones, work happens on branches, and the README states
    the current milestone. The link goes into the CV from M2 on.
 7. **Evidence is the product** — five parts, four gates, the same with or without an agent (§4.5).
-8. **One playbook for the whole process; skills are its agent form** and point to its steps (§4.4).
+8. *Moved to the test project's decisions, with its number: One playbook for the whole process; skills are its agent form.*
 9. **Plain pytest, no pytest-bdd** (§6).
 10. **A vision beyond the milestones** is kept in §10, so M1–M2 can stay small.
-11. **An own small simulation** in `demo/plant/`, not an existing twin; contract files are mounted
-    into it. **One service per machine** — one image, started as `filler`, `capper` or
-    `inspector` — as one contract per machine (decision 23) asks for: a single machine can be
-    started and tested alone (FAT), one can be stopped while the others run, and the line's
-    consensus shows it. A fourth service, the SCU, coordinates them (decision 26).
-12. **The web page is plain HTML** on MQTT WebSockets, no Streamlit, no backend.
+11. *Moved to the test project's decisions, with its number: An own small simulation.*
+12. *Moved to the test project's decisions, with its number: The web page is plain HTML.*
 13. **Contracts: the wire and the behaviour are two files.** For MQTT, `asyncapi.yaml` says how
     the system speaks (topics, payloads, types, ranges); `line.yaml` says how it behaves and
     refers to the AsyncAPI channels. Other protocols bring their own wire format later —
     NodeSet2 XML for OPC UA, `.proto` for gRPC, OpenAPI for REST — and all are read into the
     same internal contract.
-14. **Four files, four questions** — kept apart so none of them leaks into another:
-
-    | File | Answers | Read by | In Git | Secrets |
-    | --- | --- | --- | --- | --- |
-    | `demo/contracts/` (AsyncAPI per machine, `packml.yaml`, `line.yaml`; decision 23) | What *should* the system do? | plant, tests, web page | yes | never |
-    | `demo/plant/config.json` | In which state does this plant *start*? (levels, counters, speed, active faults, random seed, physics) | plant; tests as a precondition | yes, one file per scenario | never |
-    | `.env` | *Where* does it run, and *who* may connect? | tests, Docker Compose | no — `.env.example` is | here, or generated into `demo/secrets/` (decision 16) |
-    | `busproof.toml` | *How* do the tests run? (environments, timeouts, stance, reporters) | tests | yes | never — only variable *names* |
-
-    The behaviour file holds what a test can check: topology and the flow of units (stations,
-    transit times), variables with type, unit, range, normal range, warning and alarm limits and
-    a *safety-critical* flag, setpoints, commands with their allowed states, alarms with their
-    trigger, and the shape of a message (a whole state, or one value per topic). It does not
-    hold how the web page draws a machine, nor the physics of the simulation — those belong to
-    the page and to `config.json`. A test may read its *precondition* from `config.json`; what
-    is *correct* always comes from the contract, or the tests would only mirror the plant.
+14. *Moved to the test project's decisions, with its number: Four files, four questions.*
 15. **Secrets are off limits for every agent**, enforced where it can be and written down where
     it cannot: permission rules and a guard before every tool call refuse `.env` files, a
     `secrets/` folder and key files; a secret scan runs before each commit; and an agent that
     sees such a file open in the editor stops and asks for it to be closed. The rules live in
     `AGENTS.md`, which every assistant reads.
-16. **The demo creates its own secrets on first start.** `make demo` finds no credentials and
-    has a one-off container generate them: a random password, a small certificate authority,
-    and certificates for the broker and its clients. They land in `demo/secrets/`, which Git
-    ignores and the guard closes to agents. Nothing secret is ever in the repository, nobody
-    has to create a file by hand, and every installation has keys of its own.
-17. **Security is a switch with three profiles — the same options the library offers a real
-    system:**
-
-    | Profile | Meaning | For |
-    | --- | --- | --- |
-    | `open` | no login, no encryption (port 1883) | a quick try only; console and web page say *insecure* plainly |
-    | `password` | user and password, always over TLS (port 8883) | the usual case — a password without encryption protects nothing |
-    | `mtls` | client certificates (X.509) on both sides | what industrial customers expect, in the spirit of IEC 62443 |
-
-    Chosen with `make demo SECURITY=…`. Order: `open` first with the switch built in, `password`
-    as the default in M2, `mtls` after it. Under `mtls` the web page still connects with a
-    password, because browsers handle client certificates poorly. The `.env.example` names file
-    *paths* for CA, certificate and key — never their contents. `open` and `password` are built;
-    `mtls` follows with M3. A browser would not trust the demo's own certificate authority, so
-    the page's WebSocket port stays plain and is published to this computer only; a real
-    installation serves it with a proper certificate.
+16. *Moved to the test project's decisions, with its number: The demo creates its own secrets on first start.*
+17. *Moved to the test project's decisions, with its number: Security is a switch with three profiles — the same options the library offers a real system.* What stays
+    here: the library connects without a login, with a password over TLS, and later with
+    client certificates.
 18. **Entities and fixtures follow the page-object pattern** — the same shape as a Playwright
     project, translated:
 
@@ -498,6 +466,10 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28), 2026-11
     machine all three follow is `packml.yaml`, once. `line.yaml` only composes: which machines,
     in which order, and the values of the address parameters. This refines decisions 13 and
     14, which spoke of one `asyncapi.yaml`.
+    *Added 2026-11-17:* the core needs one thing from a contract — a function from machine and
+    name to an address (`Topics`). `read_line` is the one reader there is, for AsyncAPI files
+    and a `line.yaml`. A test project with another format writes that function itself; a
+    reader for a second format joins the library, as an optional part, when a user needs it.
 24. **Contracts are central, but not an entry ticket.** Many plants run large machines with no
     written contract: it lives in the PLC program, the HMI tag list, a few heads — and in what
     the bus carries every day. BusProof meets them there instead of shutting them out. Step 1
@@ -522,40 +494,9 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28), 2026-11
     project's `conftest.py`. A stand-in plant over the fake bus carried the tests through M1 and
     went once the plant ran in Docker: playing an SCU too, it would have become a second plant.
     So `make check` stays offline, and `make line-tests` needs Docker, also in CI.
-26. **An SCU coordinates the line, and all of it speaks MQTT for now.** The SCU is the central
-    unit of the demo plant, with a contract of its own. It takes line commands and passes them
-    on in the order `line.yaml` gives (start from the end of the line, stop from its beginning),
-    reports a line state of its own, reacts when a machine fails or goes silent, and plays the
-    transport: it knows where a bottle is and when it arrives. It counts nothing: each station
-    counts its own ("one number, one owner"). Its state is a *claim* that tests compare with the
-    consensus BusProof derives from the machines, so a line controller reporting `Execute` over
-    a half-running line is a finding. Each unit, machine or SCU, takes commands from outside,
-    reports after a command and on every change, and repeats its whole state as a heartbeat.
-    MQTT's last will tells "silent" from "gone". Machines stay directly reachable, so a machine
-    can be tested without the SCU (FAT) and the web page can stop one or change its parameters
-    behind the SCU's back, which the SCU must notice from the reports. `Abort` is the demo's
-    emergency stop and only a logical one: a real one is a hard-wired safety circuit, never a
-    message on a bus. Real plants often use OPC UA between SCU and machines. It comes later,
-    on purpose, as the proof that *the same tests pass over another bus*; the plant keeps its
-    communication in one place to make that possible.
-27. **Bottles take time, and supplies run out.** A bottle begins at the filler, and the SCU carries
-    it from station to station in the times `line.yaml` gives; each station judges it and counts
-    it itself. So a fault at the start of the line shows seconds later at its end, which is what
-    an asynchronous test is for. The belt runs in `Execute`, and on `Stop` until it is empty, so
-    the others stop only then; it stands still in `Hold`; an `Abort` loses what is on it, and the
-    SCU says how many. Hence a balance a test can check: filled = rejected + passed + in transit
-    + lost. Empty bottles, liquid and caps are start values in `config.json`, reported in the
-    status and refilled over `…/set`. An empty supply makes the machine hold, as PackML means
-    `Hold`: a reason inside the machine (`Suspend` would be one from outside). The SCU notices
-    and holds the line; after a refill, `Unhold` brings it back.
-28. **Two handles for a test: faults while it runs, scenarios for how it starts.** A fault that no
-    parameter can cause is switched by a message to `…/<unit>/fault`, in the running plant. No
-    contract knows that topic, as a real machine has no such handle (`demo/plant/FAULTS.md`). A
-    scenario is a small file naming what differs from `config.json`; a test asks for one with
-    `@pytest.mark.scenario("low_caps")`, and the units restart while the broker and the test's
-    recording stay. `tests/faults/` switches each fault on and requires the check meant for it to
-    find it, and a clean run not to: the seed of catch power (M7). A unit says it is online only
-    once it listens, so no first command gets lost after a restart.
+26. *Moved to the test project's decisions, with its number: An SCU coordinates the line, and all of it speaks MQTT for now.*
+27. *Moved to the test project's decisions, with its number: Bottles take time, and supplies run out.*
+28. *Moved to the test project's decisions, with its number: Two handles for a test: faults while it runs, scenarios for how it starts.*
 29. **Four folders side by side; the root is only the table of contents.** `library/`, `plant/`,
     `contracts/` and `test-project/` mirror the parties in §2: the tool, the system under test,
     the agreement, the test author. Amends decision 19, where the root was the tool and the
