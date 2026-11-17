@@ -64,9 +64,9 @@ In the domain, BusProof talks to the machines of a line. Technically, it talks t
 | Technical | Few run-time dependencies (today PyYAML, optionally aiomqtt) | Each new one needs a reason. |
 | Organisational | One maintainer, who works with AI help and must be able to explain every change | Limits how many protocols and layers BusProof can carry. The hardest constraint. |
 | Organisational | A public repository, in English, under Apache-2.0 | Nothing confidential in the repository. |
-| Organisational | The library's tests run offline; the demo needs Docker | `make check` needs no broker. |
+| Organisational | The library's tests run offline; the demo, in its own repository, needs Docker | `make check` needs no broker. |
 | Regulatory | No dependency that restricts use | Licences have to be checked, also those of packages pulled in by others. No tool does it yet. |
-| Regulatory | Agents do not read secrets | Enforced by the guard the test project brings (`test-project/.claude/hooks/guard.py`). |
+| Regulatory | Agents do not read secrets | Enforced by a guard before every tool call (`.claude/hooks/guard.py`). |
 
 No constraint comes from outside: no client, no target plant, no deadline.
 
@@ -291,44 +291,35 @@ What is left out for now:
   from the environment, documented in `.env.example`. Found by walking up from the current
   directory, as pytest finds its config. Arrives with M1.
 
-## 7 · Repository layout (target)
+## 7 · Repository layout
 
-One repository, four folders side by side — one for each party in §2. The root is the table of
-contents, not the tool (decision 29).
+Two repositories (decision 30). This one is the library:
 
 ```
 busproof/
-├─ library/                  the tool: published as the package `busproof`
-│  ├─ src/busproof/          core (layer 1) and knowledge (layer 2)
-│  └─ tests/                 the tool's own tests, one file per module
-│
-├─ plant/                    the system under test; knows nothing of BusProof
-│  ├─ compose.yaml           broker + machines + web page
-│  ├─ mosquitto/             the broker's configuration
-│  └─ src/  tests/  web/     the simulation, its own tests, the demo page
-│
-├─ contracts/                the agreement: machines/*.asyncapi.yaml, packml.yaml, line.yaml
-│
-├─ test-project/             the test project, written as a customer would
-│  ├─ busproof.toml  conftest.py
-│  ├─ AGENTS.md  .claude/    its own rules for AI assistants, and the guard that enforces them
-│  ├─ machines/              machine objects (the page objects)
-│  └─ tests/                 control/  product/  timing/  …
-│
-├─ tests/repo/               checks on the repository itself: the rules between the folders
-├─ docs/                     IDEAS, CONCEPT, PLAYBOOK
-└─ README.md  Makefile  AGENTS.md  pyproject.toml (the workspace and shared settings only)
+├─ src/busproof/     core (layer 1) and knowledge (layer 2)
+├─ tests/            one file per module, and the checks on the guard and the package
+├─ docs/             IDEAS, CONCEPT, PLAYBOOK
+└─ README.md  Makefile  AGENTS.md  pyproject.toml
 ```
 
-Who wants to write a test opens `test-project/` on its own and sees a test project, with the
-rules and the guard for AI assistants it brings itself. Who wants to change the
-language opens `library/`. `plant/` and `test-project/` each have an `.env.example` of their own:
-where the plant listens is the plant's business, where the system is and how to log in is the
-test project's.
+The second is a test project with a plant to try it on — the user's side, laid out the way a
+test project of their own would be:
 
-Three kinds of tests, three questions: `library/tests/` — does the tool work? `plant/tests/` —
-does the simulation compute right? `test-project/` — does the *plant* work, and does the suite
-catch its faults? Only the last is what the tool is for.
+```
+busproof-test-project/
+├─ tests/  machines/  conftest.py  busproof.toml    the test project, at the root
+├─ AGENTS.md  .claude/                               its own rules for AI assistants, and the guard
+├─ contracts/                                        the agreement: AsyncAPI per unit, packml.yaml, line.yaml
+├─ plant/                                            the system under test; knows nothing of BusProof
+└─ selftest/                                         checks on that repository itself
+```
+
+Who clones the test project installs it, starts the plant and runs the tests, all from its root.
+Who wants to change the language works here. Three kinds of tests, three questions: `tests/`
+here — does the tool work? `plant/tests/` there — does the simulation compute right? The test
+project's `tests/` — does the *plant* work, and does the suite catch its faults? Only the last is
+what the tool is for.
 
 ## 8 · Milestones — each one shows something
 
@@ -349,7 +340,7 @@ release with a short changelog entry. Later candidates: an OPC UA adapter, shown
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28), 2026-11-17 (29):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28), 2026-11-17 (29–30):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -581,6 +572,18 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28), 2026-11
     shown by a CI step of its own; and the separation stays an agreement, kept by the tests in
     `tests/repo/`. `make demo` stays the command that starts the plant. Earlier decisions name
     paths as they were on their day (`demo/…`, `src/…`).
+    *Amended by decision 30 on the same day: the test project, the plant and the contracts left
+    for a repository of their own.*
+30. **Two repositories: the library here, the test project with its plant in its own.** Amends
+    decision 29. *Why:* whoever clones a repository starts from its root. A test project inside
+    the maker's repository had to be opened as a folder on its own to get its environment, its
+    editor settings and its rules for AI assistants — a step nobody guesses, and the first try
+    failed on it. With the test project at the root of its own repository, cloning, installing
+    and running a test work the way they do in any project. *What it costs:* a change that
+    touches language and tests together is two commits in two repositories; the test project
+    needs BusProof from somewhere — from this repository cloned next to it until the first
+    release, from PyPI after; the plant's tests against a real broker no longer run in this
+    repository's CI; and the guard for AI assistants exists in both repositories.
 
 To settle later:
 

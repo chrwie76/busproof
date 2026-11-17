@@ -1,8 +1,0 @@
-# How the tests of the packaging line run. BUSPROOF_ENV picks the section (default: local).
-# Where the broker is and how to log in are environment variables, never in this file.
-
-[env.local]
-line = "../contracts/line.yaml"
-
-[env.ci]
-line = "../contracts/line.yaml"

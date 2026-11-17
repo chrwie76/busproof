@@ -35,7 +35,7 @@ both follow it — and neither owns it. Without it, a test checks what someone g
 lists, an OPC UA NodeSet, the standard the machines claim (PackML, Weihenstephan Standards), and
 the layout of the line. And a person who can answer questions about the plant.
 
-**What comes out** (the demo's are in `contracts/`):
+**What comes out** (the demo's are in `contracts/` of the demo repository):
 
 | File | Answers |
 | --- | --- |
@@ -120,7 +120,7 @@ where an agent helps most: reading thousands of messages is its work, judging th
 
 **What goes in.** The agreed contracts of step 1, and a plant to run against.
 
-**What comes out** (the demo's are in `test-project/`):
+**What comes out** (the demo's are the demo repository itself):
 
 | File | What it is |
 | --- | --- |
@@ -166,7 +166,7 @@ A test that was never seen to fail proves little: it may check nothing at all. H
 **How, by hand.**
 
 1. **Switch a real fault on.** A parameter where one causes it, a test handle otherwise
-   (`plant/FAULTS.md`), or change the plant's code for one run.
+   (`plant/FAULTS.md` in the demo repository), or change the plant's code for one run.
 2. **Run the whole suite, and read what turns red.** Exactly the test meant for it should, and a good
    control test should stay green: a line showing `Execute` and making nothing is a fault of the
    product, not of control.

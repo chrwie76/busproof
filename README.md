@@ -1,7 +1,6 @@
 # BusProof
 
-**Make your system bus-proof.** A Python test language for asynchronous industrial interfaces, with
-a demo plant to show it.
+**Make your system bus-proof.** A Python test language for asynchronous industrial interfaces.
 
 > **🚧 Work in progress.** It works, and the demo runs, but the interface can still change and
 > nothing is on PyPI yet. Where it stands: milestone 2 of 8 ([plan](docs/CONCEPT.md#8--milestones--each-one-shows-something)).
@@ -22,31 +21,6 @@ await asyncio.gather(
 expected inspector.reject_count to rise by 2 within 20s — it rose by 0; seen: 0 (41 messages)
 ```
 
-## What is where
-
-One repository, four folders — one for each party a test involves:
-
-| Folder | What it is | In real life |
-| --- | --- | --- |
-| [library/](library/) | BusProof itself, published as the package `busproof` | the tool you install |
-| [plant/](plant/) | The system under test: a simulated packaging line, its broker and its web page | the machine builder's product |
-| [contracts/](contracts/) | How the plant talks and how it behaves: one AsyncAPI file per unit, `packml.yaml`, `line.yaml` | the interface agreement between the plant's maker and its testers |
-| [test-project/](test-project/) | The tests of the plant, written with BusProof | your own test repository |
-
-To write a test, open `test-project/` on its own, as a folder — it is laid out like a test project
-of your own, with its own environment and its own rules for AI assistants. Its
-[README](test-project/README.md#getting-started) gets you to a first green test. To change the language, open
-`library/`. Three rules keep
-the folders apart; tests in `tests/repo/` check the second and the third:
-
-1. **The tool knows no plant.** Nothing in `library/` names a machine, a bottle or a topic of this
-   line.
-2. **The plant knows nothing of BusProof.** A system does not know the tool it is tested with; it
-   speaks only its contract.
-3. **The test project uses BusProof the way any customer would** — through `from busproof import …`,
-   with its own `pyproject.toml` and `busproof.toml`. If it needs something the library does not
-   offer, that is a change to the library, not a workaround there.
-
 ## What works today
 
 - **`expect` that waits:** `to_be`, `rises_by`, `remains`. Silence does not count as stability.
@@ -57,16 +31,19 @@ the folders apart; tests in `tests/repo/` check the second and the third:
 
 ## The demo
 
-A small bottling line in Docker: a filler, a capper and an inspector following PackML, a central
-unit that coordinates them, and a web page to watch and use it. Stop a machine or set the filler too
-low, and watch what the line does. Its tests run on a real broker and switch real faults on, to show
-that they catch them.
+A small bottling line in Docker — a filler, a capper and an inspector following PackML, a central
+unit that coordinates them, and a web page to watch and use it — with a test project that runs on
+a real broker and switches real faults on, to show that the tests catch them.
+
+The demo is moving to a repository of its own, laid out the way a test project of yours would be:
+clone it, install, start the plant, run the tests. This repository stays the library. The link
+will be here when the demo repository is public.
+
+## Working on the library
 
 ```bash
-make install     # needs Ubuntu, Docker, uv and make
-make demo        # the line, at http://localhost:8088; it says how to log in
-make line-tests  # its tests, about five minutes, as bottles take real time
-make demo-down
+make install     # needs Ubuntu, uv and make
+make check       # style, types and the tests; they need no broker and no network
 ```
 
 ## Not there yet

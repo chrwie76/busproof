@@ -1,7 +1,7 @@
 """Fixtures shared by the tests of BusProof itself.
 
 Tests here check the tool, never a plant: one file per module of the library (test_expect.py
-checks expect.py). Tests *of a plant* written *with* BusProof live in ../test-project.
+checks expect.py). Tests *of a plant* written *with* BusProof live in a test project of their own.
 """
 
 import asyncio

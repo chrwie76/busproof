@@ -1,12 +1,10 @@
 # CLAUDE.md
 
 BusProof: a Python test language for the behaviour over time of systems that talk through
-messages, with a demo plant to show it. Principles: [docs/IDEAS.md](docs/IDEAS.md).
+messages. This repository is the library only; a test project that uses it, with a demo plant,
+has a repository of its own. Principles: [docs/IDEAS.md](docs/IDEAS.md).
 
-Rules for every agent, above all about secrets and the contract — the test project's, which
-apply in the whole repository: @test-project/AGENTS.md
-
-What only building BusProof needs: @AGENTS.md
+Rules for every agent, above all about secrets: @AGENTS.md
 
 ## Commands
 

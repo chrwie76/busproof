@@ -13,7 +13,7 @@ import pytest
 
 from guard import check
 
-GUARD = Path(__file__).parents[2] / "test-project" / ".claude" / "hooks" / "guard.py"
+GUARD = Path(__file__).parents[1] / ".claude" / "hooks" / "guard.py"
 
 
 @pytest.mark.parametrize(
@@ -53,10 +53,10 @@ def test_it_refuses_what_touches_a_secret(tool, args):
     ("tool", "args"),
     [
         ("Read", {"file_path": "plant/.env.example"}),
-        ("Edit", {"file_path": "/home/me/busproof/test-project/.env.example"}),
-        ("Read", {"file_path": "library/src/busproof/__init__.py"}),
+        ("Edit", {"file_path": "/home/me/test-project/.env.example"}),
+        ("Read", {"file_path": "src/busproof/__init__.py"}),
         ("Read", {"file_path": ".envrc.md"}),
-        ("Grep", {"pattern": "\\.env", "path": "library/src"}),
+        ("Grep", {"pattern": "\\.env", "path": "src"}),
         ("Grep", {"pattern": "secrets"}),
         ("Glob", {"pattern": "**/*.py"}),
         ("Bash", {"command": "make check"}),

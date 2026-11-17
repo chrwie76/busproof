@@ -3,32 +3,37 @@
 Rules for every AI assistant working in this repository: Claude Code, Copilot, Cursor and the
 agents that the playbook and its skills start. A person working here follows them too.
 
-## Two sets of rules
+## Secrets are off limits
 
-This repository holds the tool and a test project that uses it. The test project brings its own
-rules, so they hold when someone opens only that folder — as a user of BusProof would.
+This repository needs no secret: the library's tests run offline. The rules hold all the same.
 
-- **[test-project/AGENTS.md](test-project/AGENTS.md) applies in the whole repository:** secrets
-  are off limits, and the contract is the truth. Read it first. It is the one place these rules
-  are written down.
-- **This file adds what only building BusProof needs.**
+- **Never open, write, search, copy, print or quote** a file that holds secrets: `.env` and
+  every `.env.*` except a template `.env.example`, anything in a `secrets/` folder, and key
+  files (`*.pem`, `*.key`).
+- **Never print the environment** — no `printenv`, no bare `env`, no `docker compose config`
+  (it shows the Compose file with `.env` filled in).
+- **Such a file open or selected in the editor?** Stop at once, quote nothing from it, and ask
+  for it to be closed. Continue only when it is.
+- **A secret reached you anyway?** Do not use it. Say that you saw one, so a person can replace
+  it.
 
-## What enforces the rules on secrets here
+### What enforces this
 
 | Where | What |
 | --- | --- |
-| `.claude/settings.json` | Permission rules: Claude Code may not read or edit secret files. Its hook is the test project's guard. |
-| `test-project/.claude/hooks/guard.py` | Runs before every tool call of Claude Code and refuses calls that touch a secret, also through the shell. Tested in `tests/repo/test_guard.py`. |
+| `.claude/settings.json` | Permission rules: Claude Code may not read or edit secret files. |
+| `.claude/hooks/guard.py` | Runs before every tool call of Claude Code and refuses calls that touch a secret, also through the shell. Tested in `tests/test_guard.py`. |
 | `.pre-commit-config.yaml` | gitleaks scans every commit for secrets — for people and agents alike. |
 
-Claude Code reads its settings from the folder it is started in. Started at the root, these
-settings apply; started in `test-project/`, that folder's own do.
+The editor rule cannot be enforced by a tool: a guard does not see what is open in the editor.
+It holds because every agent here reads this file.
 
-## The contract, when building the plant
+## The contract is the truth
 
-What the test project's rule says of a test holds for the plant too: it may use only what the
-contracts in `contracts/` say. Adding something to a contract is a decision for a person
-(docs/PLAYBOOK.md, step 1).
+- **Never invent a topic, payload field, state or command.** What a test may use is what the
+  contracts of the system under test say. A guessed topic makes a test that checks nothing.
+- **The library names no plant.** Nothing in `src/busproof` knows a machine, a bottle or a topic
+  of any particular line.
 
 ## Working here
 

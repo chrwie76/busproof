@@ -8,7 +8,6 @@ Python itself — the system Python does not matter.
 ```bash
 make install   # .venv + dependencies + Git hooks
 make check     # lint, types, tests, all offline — as CI runs them
-make line-tests  # the demo plant in Docker, its tests on a real broker; CI runs this too
 make           # list all commands
 ```
 
@@ -18,7 +17,7 @@ If you know a Node/Playwright project, the right-hand column is the file you alr
 
 | File | What it does | Known from |
 | --- | --- | --- |
-| `pyproject.toml` | The workspace of three projects, and the settings of ruff and pyright they share; each project has a `pyproject.toml` of its own | the root `package.json` of a workspace, `tsconfig.json` |
+| `pyproject.toml` | Name, dependencies, settings of pytest, ruff and pyright | `package.json`, `tsconfig.json` |
 | `uv.lock` | Exact versions of every dependency — commit it, never edit it | `package-lock.json` |
 | `.python-version` | The Python we develop on (3.13); `requires-python` says the oldest supported (3.12) | `.nvmrc`, `engines` |
 | `Makefile` | The command menu | `scripts` in `package.json` |
@@ -27,29 +26,23 @@ If you know a Node/Playwright project, the right-hand column is the file you alr
 | `.github/workflows/release.yml` | A tag like `v0.2.0` publishes to TestPyPI, then PyPI, with no password stored | a publish pipeline |
 | `.github/pull_request_template.md` | Prefills every pull request: what and why, provenance, evidence, acceptance | GitLab merge request templates |
 | `.github/dependabot.yml` | A monthly pull request when an action or dependency is outdated | Renovate |
-| `AGENTS.md` | Rules for every AI assistant when building BusProof; the rules on secrets and contracts are in `test-project/AGENTS.md` and apply everywhere | — |
+| `AGENTS.md` | Rules for every AI assistant, above all: secrets are off limits | — |
 | `.claude/settings.json` | Permission rules and the guard hook for Claude Code | — |
-| `test-project/.claude/hooks/guard.py` | Refuses a tool call that touches a secret; runs before every call. The test project brings it, the root's settings use it too | a husky hook script |
+| `.claude/hooks/guard.py` | Refuses a tool call that touches a secret; runs before every call | a husky hook script |
 | `.editorconfig` | Same whitespace in every editor | — |
 | `.gitattributes` | Line endings are LF everywhere | — |
 | `.venv/` | The virtual environment, created by uv — never committed | `node_modules/` |
 
-`plant/` and `test-project/` each have an `.env.example` of their own: the variables that folder
-needs, documented. Copy it to `.env` next to it, which is never committed.
-
 ## Where things live
 
-| Folder | What | Its tests answer |
+| Folder | What | Its tests |
 | --- | --- | --- |
-| `library/` | the tool | `library/tests/` — one file per module, same name: `expect.py` ↔ `test_expect.py` |
-| `plant/` | the system under test | `plant/tests/` — does the simulation compute right? |
-| `contracts/` | the agreement between the plant and its testers | `tests/repo/test_contracts.py` — are the files valid? |
-| `test-project/` | the test project, as a customer writes it | it *is* the tests — of the plant, written with BusProof |
-| repository files | guard, templates, packaging, the rules between the folders | `tests/repo/` |
+| `src/busproof/` | the library | `tests/` — one file per module, same name: `expect.py` ↔ `test_expect.py` |
+| repository files | the guard, packaging | `tests/test_guard.py`, `tests/test_package.py` |
+| `docs/` | IDEAS (why), CONCEPT (what, and in which order), PLAYBOOK | — |
 
-Shared fixtures of the tool's tests (`bus`, `clock`, `deliver_later`) are in
-`library/tests/conftest.py`. The [README](README.md#what-is-where) has the rules that keep the
-folders apart.
+Shared fixtures of the tests (`bus`, `clock`, `deliver_later`) are in `tests/conftest.py`. A plant
+and a test project that uses the library have a repository of their own.
 
 ## Rules
 
