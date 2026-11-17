@@ -293,25 +293,39 @@ What is left out for now:
 
 ## 7 · Repository layout (target)
 
+One repository, four folders side by side — one for each party in §2. The root is the table of
+contents, not the tool (decision 29).
+
 ```
-busproof/                    the tool — the repository root is the library
-├─ src/busproof/             core (layer 1) and knowledge (layer 2)
-├─ tests/                    the tool's own tests: unit/ (one file per module), repo/, later integration/
-├─ skills/  playbook/        layer 4
-├─ docs/                     IDEAS, CONCEPT, knowledge pages
+busproof/
+├─ library/                  the tool: published as the package `busproof`
+│  ├─ src/busproof/          core (layer 1) and knowledge (layer 2)
+│  └─ tests/                 the tool's own tests, one file per module
 │
-└─ demo/                     a customer's world, built to show the tool (layer 3)
-   ├─ compose.yaml           broker + plant + web page
-   ├─ contracts/             machines/*.asyncapi.yaml, packml.yaml, line.yaml — the agreement
-   ├─ plant/                 the system under test; knows nothing of BusProof
-   └─ line-tests/            the test project, written as a customer would
-      ├─ busproof.toml  conftest.py
-      ├─ machines/           machine objects (the page objects)
-      └─ tests/              control/  product/  timing/
+├─ plant/                    the system under test; knows nothing of BusProof
+│  ├─ compose.yaml           broker + machines + web page
+│  ├─ mosquitto/             the broker's configuration
+│  └─ src/  tests/  web/     the simulation, its own tests, the demo page
+│
+├─ contracts/                the agreement: machines/*.asyncapi.yaml, packml.yaml, line.yaml
+│
+├─ test-project/             the test project, written as a customer would
+│  ├─ busproof.toml  conftest.py
+│  ├─ machines/              machine objects (the page objects)
+│  └─ tests/                 control/  product/  timing/  …
+│
+├─ tests/repo/               checks on the repository itself: the rules between the folders
+├─ docs/  tools/             IDEAS, CONCEPT, PLAYBOOK; repository helpers (the guard)
+└─ README.md  Makefile  AGENTS.md  pyproject.toml (the workspace and shared settings only)
 ```
 
-Three kinds of tests, three questions: `tests/` — does the tool work? `demo/plant/tests/` — does
-the simulation compute right? `demo/line-tests/` — does the *plant* work, and does the suite
+Who wants to write a test opens `test-project/` and sees a test project. Who wants to change the
+language opens `library/`. `plant/` and `test-project/` each have an `.env.example` of their own:
+where the plant listens is the plant's business, where the system is and how to log in is the
+test project's.
+
+Three kinds of tests, three questions: `library/tests/` — does the tool work? `plant/tests/` —
+does the simulation compute right? `test-project/` — does the *plant* work, and does the suite
 catch its faults? Only the last is what the tool is for.
 
 ## 8 · Milestones — each one shows something
@@ -333,7 +347,7 @@ release with a short changelog entry. Later candidates: an OPC UA adapter, shown
 
 ## 9 · Decisions
 
-Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28):
+Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28), 2026-11-17 (29):
 
 1. **Domain: industrial (IIoT).** A PackML packaging line on a Unified Namespace — easy to
    simulate, and it speaks the standards IIoT teams use. Smart home is out of scope.
@@ -441,6 +455,7 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28):
     `busproof.toml`. So each part can later leave for a repository of its own unchanged — the
     plant as an image with its contracts, the test project as a template — by deleting the one
     line that takes `busproof` from the workspace instead of from PyPI.
+    *Amended by decision 29: the folders are now siblings, and the root is no longer the tool.*
 20. **Matcher names tell the kind of check.** `to_be…` asks where a signal ends up
     (`to_be("Execute")`, `to_be_in({...})`); a verb asks what it does over time (`rises_by(5)`,
     `remains(...)`, `remains_between(lo, hi, ...)`, `passes_through(state)`,
@@ -548,6 +563,21 @@ Made 2026-10-28 (1–12) and 2026-10-29 (13–24), 2026-10-30 (25–28):
     recording stay. `tests/faults/` switches each fault on and requires the check meant for it to
     find it, and a clean run not to: the seed of catch power (M7). A unit says it is online only
     once it listens, so no first command gets lost after a restart.
+29. **Four folders side by side; the root is only the table of contents.** `library/`, `plant/`,
+    `contracts/` and `test-project/` mirror the parties in §2: the tool, the system under test,
+    the agreement, the test author. Amends decision 19, where the root was the tool and the
+    other three sat inside `demo/`. *Why:* someone who wants to write a test had to find their
+    way through the maker's repository, with a plant in it that is larger than the library.
+    Now they open one folder (understandability, scenario U1). *Not separate repositories:* one
+    maintainer; several repositories would mean the agent rules twice, several CI runs, and two
+    steps for every change that touches language and tests together. A folder can later leave
+    with its history; the way back is dearer. *Split when* someone else maintains a part, a part
+    is released at its own pace, a part uses another technology, or a part needs other access
+    rights. *What it costs:* `pyproject.toml` is divided — the package's description moves to
+    `library/`, the workspace and shared settings stay at the root; the test project still uses
+    the library from the workspace, so that the published package alone is enough has to be
+    shown by a CI step of its own; and the separation stays an agreement, kept by the tests in
+    `tests/repo/`. `make demo` stays the command that starts the plant.
 
 To settle later:
 
