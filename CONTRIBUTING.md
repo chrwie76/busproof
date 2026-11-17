@@ -39,7 +39,7 @@ If you know a Node/Playwright project, the right-hand column is the file you alr
 | --- | --- | --- |
 | `src/busproof/` | the library | `tests/` — one file per module, same name: `expect.py` ↔ `test_expect.py` |
 | repository files | the guard, packaging | `tests/test_guard.py`, `tests/test_package.py` |
-| `docs/` | IDEAS (why), CONCEPT (what, and in which order) | — |
+| `docs/` | IDEAS (why), CONCEPT (what, and in which order), ROADMAP (what is not built yet) | — |
 
 Shared fixtures of the tests (`bus`, `clock`, `deliver_later`) are in `tests/conftest.py`. A plant
 and a test project that uses the library have a repository of their own.

@@ -299,7 +299,7 @@ Two repositories (decision 30). This one is the library:
 busproof/
 ├─ src/busproof/     core (layer 1) and knowledge (layer 2)
 ├─ tests/            one file per module, and the checks on the guard and the package
-├─ docs/             IDEAS, CONCEPT
+├─ docs/             IDEAS, CONCEPT, ROADMAP
 └─ README.md  Makefile  AGENTS.md  pyproject.toml
 ```
 

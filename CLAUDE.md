@@ -2,7 +2,7 @@
 
 BusProof: a Python test language for the behaviour over time of systems that talk through
 messages. This repository is the library only; a test project that uses it, with a demo plant,
-has a repository of its own. Principles: [docs/IDEAS.md](docs/IDEAS.md).
+has a repository of its own. Principles: [docs/IDEAS.md](docs/IDEAS.md). What is not built yet: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 Rules for every agent, above all about secrets: @AGENTS.md
 
