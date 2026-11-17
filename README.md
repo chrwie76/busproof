@@ -2,8 +2,8 @@
 
 **Make your system bus-proof.** A Python test language for asynchronous industrial interfaces.
 
-> **🚧 Work in progress.** It works, and the demo runs, but the interface can still change and
-> nothing is on PyPI yet. Where it stands: milestone 2 of 8 ([plan](docs/CONCEPT.md#8--milestones--each-one-shows-something)).
+> **🚧 Work in progress.** The library works and is tested, but its interface can still change
+> and nothing is on PyPI yet.
 
 An asynchronous system answers a command now and shows its effect later, somewhere else. So a test
 waits for the system, and a failure says what it saw:

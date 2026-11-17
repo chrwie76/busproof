@@ -3,7 +3,7 @@
 
 [project]
 name = "busproof"
-description = "A test language for asynchronous industrial interfaces: MQTT, REST, OPC UA."
+description = "A test language for the behaviour over time of systems that talk through messages. MQTT today."
 readme = "README.md"
 license = "Apache-2.0"
 authors = [{ name = "Christoph Wielgus" }]
