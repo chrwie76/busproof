@@ -30,8 +30,10 @@ What BusProof exchanges with its surroundings:
 
 Four limits follow from this, and every later decision is held against them:
 
-- **Only over the network.** BusProof never imports, patches or reaches into the code of the
-  system under test. The demo plant is reached the same way a customer's plant would be.
+- **Only through the interface.** BusProof knows the system under test by its messages alone.
+  It never imports, patches or reaches into its code. Whether a real machine or a simulated
+  neighbour answers, BusProof cannot tell. The demo plant is reached the same way a customer's
+  plant would be.
 - **Secrets stay apart.** Where the system is and how to log in are separate things; BusProof
   reads secrets from the environment and never from a file (decision 25).
 - **Everything works without an agent.** A person can write, read and repair a test with the
@@ -39,6 +41,34 @@ Four limits follow from this, and every later decision is held against them:
   test cannot be written without an agent, the language is too complicated — a defect here.
 - **No dependency that restricts use.** Nothing with a condition such as "non-commercial"
   comes in, directly or through another package.
+
+### 2.1 Technical context — what BusProof talks to at run time
+
+| Neighbour | Channel | State |
+| --- | --- | --- |
+| An MQTT broker, with the system under test behind it | MQTT, with TLS and a login | built |
+| pytest, the test runner | Fixtures through the entry point | built |
+| Contract files (AsyncAPI, `line.yaml`) | Files on disk | built |
+| The environment (where the system is, credentials) | Environment variables, `busproof.toml` | built |
+| A REST service | HTTP | planned, not built |
+
+In the domain, BusProof talks to the machines of a line. Technically, it talks to a broker.
+
+### 2.2 Constraints
+
+| Kind | Constraint | What follows |
+| --- | --- | --- |
+| Technical | Python 3.12 or later, asynchronous throughout (asyncio) | No synchronous facade. |
+| Technical | pytest is the test runner | No abstraction for exchangeable test runners. The plugin stays a small adapter at the edge. |
+| Technical | Protocol libraries are optional extras | The core runs without them. |
+| Technical | Few run-time dependencies (today PyYAML, optionally aiomqtt) | Each new one needs a reason. |
+| Organisational | One maintainer, who works with AI help and must be able to explain every change | Limits how many protocols and layers BusProof can carry. The hardest constraint. |
+| Organisational | A public repository, in English, under Apache-2.0 | Nothing confidential in the repository. |
+| Organisational | The library's tests run offline; the demo needs Docker | `make check` needs no broker. |
+| Regulatory | No dependency that restricts use | Licences have to be checked, also those of packages pulled in by others. No tool does it yet. |
+| Regulatory | Agents do not read secrets | Enforced by `tools/guard.py`. |
+
+No constraint comes from outside: no client, no target plant, no deadline.
 
 ## 3 · Where it sits — what others already do
 
