@@ -2,9 +2,10 @@
 # Each project is described by a pyproject.toml of its own; exact versions live in uv.lock.
 
 [tool.uv.workspace]
-# Several projects in one repository, sharing one .venv and one uv.lock (like npm workspaces):
-# the library that is published, the plant that is tested, and the test project that tests it.
-members = ["library", "plant", "test-project"]
+# Two projects sharing one .venv and one uv.lock (like npm workspaces): the library that is
+# published and the plant that is tested. The test project is not a member: it has an environment
+# of its own, as a user's test project would.
+members = ["library", "plant"]
 
 [dependency-groups]
 # Tools for working on BusProof itself; never installed for users.

@@ -9,3 +9,7 @@ updates:
     directory: /
     schedule:
       interval: monthly
+  - package-ecosystem: uv
+    directory: /test-project  # it has a lock file of its own
+    schedule:
+      interval: monthly

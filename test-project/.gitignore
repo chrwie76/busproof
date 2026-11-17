@@ -1,0 +1,8 @@
+# What a test project must never commit, also when this folder is a repository of its own.
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+.claude/settings.local.json

@@ -12,9 +12,9 @@ dependencies = ["busproof[mqtt]", "pytest>=9.2.0", "pytest-asyncio==1.4.1"]
 package = false
 
 [tool.uv.sources]
-# Inside this repository, busproof comes from the workspace. Delete this line when the project
-# moves to a repository of its own — busproof then comes from PyPI like for any customer.
-busproof = { workspace = true }
+# Until busproof is on PyPI, it comes from the folder next to this one, and a change there is
+# seen here at once. Delete this line then — busproof comes from PyPI like for any customer.
+busproof = { path = "../library", editable = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

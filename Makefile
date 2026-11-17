@@ -29,6 +29,7 @@ help:  ## List the commands
 
 install:  ## Create .venv, install everything, set up the Git hooks
 	uv sync --all-packages --all-extras
+	cd test-project && uv sync  # the test project has an environment of its own
 	uv run pre-commit install --hook-type pre-commit --hook-type pre-push
 
 lint:  ## Check style and common mistakes
