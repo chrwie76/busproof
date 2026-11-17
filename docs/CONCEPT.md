@@ -70,6 +70,30 @@ In the domain, BusProof talks to the machines of a line. Technically, it talks t
 
 No constraint comes from outside: no client, no target plant, no deadline.
 
+### 2.3 Quality goals, in this order
+
+1. **Reliability — the verdict is right.** First no false green, then no false red. A green test
+   on a plant that is wrong is the worst thing this tool can produce.
+2. **Understandability — a person understands what is there.** Someone who can program writes a
+   test quickly and reads someone else's, without an agent. This goal is about the tests of
+   BusProof's users.
+3. **Maintainability — BusProof itself stays small and changeable**, so that one maintainer can
+   carry it. This goal is about BusProof's own code.
+
+When two goals pull apart, the higher one wins: `remains` fails on a signal that never reports,
+although letting it pass would be more convenient.
+
+Each goal has scenarios it can be checked by:
+
+| | Trigger | Expected | Measure | State |
+| --- | --- | --- | --- | --- |
+| R1 | A test uses `remains` on a signal that never reports, for example a misspelt name. | The test fails and says that nothing was seen. | No green without at least one message seen. | built |
+| R2 | The line tests run several times in a row against the healthy demo plant. | Every run is green. | 10 runs, 0 failures. | 2 runs checked so far |
+| U1 | Someone who can program and does not know BusProof writes a test for one machine of the demo. | They manage with the README and the examples, without an agent. | At most 30 minutes to their first own green test. | open — not shown yet |
+| U2 | A test fails. | The message alone says what was expected, where, and what was seen. | No look into a log needed. | built |
+| M1 | A second bus is added (REST). | One new module for the bus, and one place that chooses the bus. | No change to `signals`, `machines` and `expect`. | open — the plugin knows only MQTT today |
+| M2 | Someone changes the core. | The rules for size and dependencies hold. | Every module under 200 lines; the core loads no protocol library. | the second is checked by a test, the first is not |
+
 ## 3 · Where it sits — what others already do
 
 | Tool | What it does well | What it does not do |
