@@ -27,9 +27,9 @@ If you know a Node/Playwright project, the right-hand column is the file you alr
 | `.github/workflows/release.yml` | A tag like `v0.2.0` publishes to TestPyPI, then PyPI, with no password stored | a publish pipeline |
 | `.github/pull_request_template.md` | Prefills every pull request: what and why, provenance, evidence, acceptance | GitLab merge request templates |
 | `.github/dependabot.yml` | A monthly pull request when an action or dependency is outdated | Renovate |
-| `AGENTS.md` | Rules for every AI assistant, above all: secrets are off limits | — |
+| `AGENTS.md` | Rules for every AI assistant when building BusProof; the rules on secrets and contracts are in `test-project/AGENTS.md` and apply everywhere | — |
 | `.claude/settings.json` | Permission rules and the guard hook for Claude Code | — |
-| `tools/guard.py` | Refuses a tool call that touches a secret; runs before every call | a husky hook script |
+| `test-project/.claude/hooks/guard.py` | Refuses a tool call that touches a secret; runs before every call. The test project brings it, the root's settings use it too | a husky hook script |
 | `.editorconfig` | Same whitespace in every editor | — |
 | `.gitattributes` | Line endings are LF everywhere | — |
 | `.venv/` | The virtual environment, created by uv — never committed | `node_modules/` |

@@ -1,9 +1,12 @@
 # CLAUDE.md
 
-BusProof: a Python test language for asynchronous interfaces (REST, MQTT, OPC UA), with a demo
-plant to show it. Principles: [docs/IDEAS.md](docs/IDEAS.md).
+BusProof: a Python test language for the behaviour over time of systems that talk through
+messages, with a demo plant to show it. Principles: [docs/IDEAS.md](docs/IDEAS.md).
 
-Rules for every agent, above all about secrets: @AGENTS.md
+Rules for every agent, above all about secrets and the contract — the test project's, which
+apply in the whole repository: @test-project/AGENTS.md
+
+What only building BusProof needs: @AGENTS.md
 
 ## Commands
 

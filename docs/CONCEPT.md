@@ -66,7 +66,7 @@ In the domain, BusProof talks to the machines of a line. Technically, it talks t
 | Organisational | A public repository, in English, under Apache-2.0 | Nothing confidential in the repository. |
 | Organisational | The library's tests run offline; the demo needs Docker | `make check` needs no broker. |
 | Regulatory | No dependency that restricts use | Licences have to be checked, also those of packages pulled in by others. No tool does it yet. |
-| Regulatory | Agents do not read secrets | Enforced by `tools/guard.py`. |
+| Regulatory | Agents do not read secrets | Enforced by the guard the test project brings (`test-project/.claude/hooks/guard.py`). |
 
 No constraint comes from outside: no client, no target plant, no deadline.
 
@@ -311,15 +311,17 @@ busproof/
 │
 ├─ test-project/             the test project, written as a customer would
 │  ├─ busproof.toml  conftest.py
+│  ├─ AGENTS.md  .claude/    its own rules for AI assistants, and the guard that enforces them
 │  ├─ machines/              machine objects (the page objects)
 │  └─ tests/                 control/  product/  timing/  …
 │
 ├─ tests/repo/               checks on the repository itself: the rules between the folders
-├─ docs/  tools/             IDEAS, CONCEPT, PLAYBOOK; repository helpers (the guard)
+├─ docs/                     IDEAS, CONCEPT, PLAYBOOK
 └─ README.md  Makefile  AGENTS.md  pyproject.toml (the workspace and shared settings only)
 ```
 
-Who wants to write a test opens `test-project/` and sees a test project. Who wants to change the
+Who wants to write a test opens `test-project/` on its own and sees a test project, with the
+rules and the guard for AI assistants it brings itself. Who wants to change the
 language opens `library/`. `plant/` and `test-project/` each have an `.env.example` of their own:
 where the plant listens is the plant's business, where the system is and how to log in is the
 test project's.

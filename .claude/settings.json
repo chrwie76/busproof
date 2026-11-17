@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/tools/guard.py\""
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/test-project/.claude/hooks/guard.py\""
           }
         ]
       }

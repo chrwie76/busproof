@@ -7,6 +7,8 @@ repository: it depends on `busproof` like any other package and uses only its pu
 | File | Purpose | Known from Playwright |
 | --- | --- | --- |
 | `pyproject.toml` | Depends on `busproof`; the pytest settings | `package.json` |
+| `AGENTS.md`, `CLAUDE.md` | The rules for AI assistants working here | |
+| `.claude/` | What enforces them for Claude Code: permission rules, and a guard before every tool call | |
 | `busproof.toml` | One section per environment; `BUSPROOF_ENV` picks one | `playwright.config.ts` |
 | `conftest.py` | Fixtures in layers: `bus` (from BusProof) → `line` → `idle_line` → `running_line`; each brings the plant to a known state first | fixtures with `test.extend` |
 | `machines/` | Machine objects: `filler.py`, `capper.py`, `inspector.py`, `scu.py`, `line.py`; `state.py` says what the numbers mean | page objects |
@@ -36,3 +38,9 @@ cd test-project && BUSPROOF_MQTT_URL=mqtt://localhost:1884 uv run pytest
 ```
 
 No test here names a topic: they come from the contracts in `../contracts/`.
+
+## Open this folder on its own
+
+Open `test-project/` as the folder in your editor, not the repository around it. An AI assistant
+reads its settings from the folder it is started in: only then do this project's own rules and
+its guard apply, as they would in a test project of your own.

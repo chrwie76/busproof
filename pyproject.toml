@@ -21,21 +21,23 @@ dev = [
 [tool.pytest.ini_options]
 # From the root, pytest runs the checks on the repository itself. Each project has its own tests.
 testpaths = ["tests"]
-# tools/ holds repository helpers (not part of the package) that have tests of their own.
-pythonpath = ["tools"]
+# The guard is a hook the test project brings; it is tested here, where the repository is checked.
+pythonpath = ["test-project/.claude/hooks"]
 addopts = ["--strict-markers", "--import-mode=importlib"]
 # The library's pytest plugin is installed here too, and its fixtures are asynchronous.
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 100
-src = ["library/src", "tools", "test-project", "plant/src"]  # where our own imports live, for sorting them apart from third-party ones
+src = ["library/src", "test-project/.claude/hooks", "test-project", "plant/src"]  # where our own imports live, for sorting them apart from third-party ones
 
 [tool.ruff.lint]
 # pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.pyright]
-include = ["library", "tests", "tools", "test-project", "plant"]
-extraPaths = ["tools", "test-project", "plant/src"]
+include = ["library", "tests", "test-project", "plant"]
+# pyright skips every folder that starts with a dot, so the guard in test-project/.claude/hooks is
+# not type-checked. ruff lints it, and tests/repo/test_guard.py tests it.
+extraPaths = ["test-project/.claude/hooks", "test-project", "plant/src"]
 typeCheckingMode = "standard"

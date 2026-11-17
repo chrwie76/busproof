@@ -30,7 +30,7 @@ PATH_FIELDS = {
     "Grep": ("path", "glob"),
 }
 
-REFUSAL = "Refused by tools/guard.py — secrets are off limits (AGENTS.md): {what}. "
+REFUSAL = "Refused by .claude/hooks/guard.py — secrets are off limits (AGENTS.md): {what}. "
 HINT = "If you need a variable, add its name to .env.example and ask a person to set it."
 
 
@@ -69,7 +69,7 @@ def main() -> int:
         call = json.load(sys.stdin)
         reason = check(call.get("tool_name", ""), call.get("tool_input") or {})
     except Exception as error:
-        reason = f"Refused by tools/guard.py — it could not check this call: {error}"
+        reason = f"Refused by .claude/hooks/guard.py — it could not check this call: {error}"
     if reason:
         print(reason, file=sys.stderr)
         return 2

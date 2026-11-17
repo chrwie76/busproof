@@ -33,7 +33,9 @@ One repository, four folders — one for each party a test involves:
 | [contracts/](contracts/) | How the plant talks and how it behaves: one AsyncAPI file per unit, `packml.yaml`, `line.yaml` | the interface agreement between the plant's maker and its testers |
 | [test-project/](test-project/) | The tests of the plant, written with BusProof | your own test repository |
 
-To write a test, open `test-project/`. To change the language, open `library/`. Three rules keep
+To write a test, open `test-project/` on its own, as a folder — it is laid out like a test project
+of your own, and brings its rules for AI assistants with it. To change the language, open
+`library/`. Three rules keep
 the folders apart; tests in `tests/repo/` check the second and the third:
 
 1. **The tool knows no plant.** Nothing in `library/` names a machine, a bottle or a topic of this
